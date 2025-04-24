@@ -12,22 +12,22 @@ import {
 import { Link } from "expo-router";
 import { images } from "@/constants/images";
 
-export default function Index() {
+export default function Onboarding() {
   return (
     <View style={styles.container}>
       {/* Hide the status bar completely */}
       <StatusBar hidden />
 
       <ImageBackground
-        source={images.onboarding1}
+        source={images.onboarding2}
         style={styles.backgroundImage}
         resizeMode="cover"
       >
         <SafeAreaView style={styles.contentContainer}>
           <View style={styles.buttonContainer}>
-            <Link href="/Onboarding" asChild>
+            <Link href="/Details" asChild>
               <TouchableOpacity style={styles.button}>
-                <Text style={styles.buttonText}>Next</Text>
+                <Text style={styles.buttonText}>Get Started</Text>
               </TouchableOpacity>
             </Link>
           </View>

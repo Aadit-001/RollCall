@@ -2,6 +2,7 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
+    "baseUrl": ".",  // Add this line
     "paths": {
       "@/*": [
         "./*"
@@ -17,3 +18,5 @@
     "expo-env.d.ts"
 , "app/_layout.jsx"  ]
 }
+
+

@@ -1,4 +1,8 @@
 import React, { useState } from "react";
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { auth } from './firebaseConfig';
+import { Alert } from 'react-native';
 import {
   SafeAreaView,
   StyleSheet,
@@ -15,10 +19,12 @@ import {
 import { Link, router } from "expo-router";
 import { images } from "@/constants/images";
 import { Ionicons } from "@expo/vector-icons";
+import { BlurView } from "expo-blur";
+
 
 const { width } = Dimensions.get("window");
 
-export default function SignIn() {
+function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordVisibility, setPasswordVisibility] = useState(true);
@@ -28,33 +34,74 @@ export default function SignIn() {
     setPasswordVisibility(!passwordVisibility);
   };
 
+  const handleRegister = async () => {
+    try {
+
+      // Basic validation
+      if (!email || !password) {
+        Alert.alert('Error', 'Please enter both email and password');
+        return;
+      }
+
+      // Firebase registration
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      console.log('Registered user:', user.uid);
+      
+      // Navigate to Home after successful registration
+      router.replace("./Signin");
+    } catch (error) {
+      // Handle specific Firebase auth errors
+      let errorMessage = 'Registration failed';
+      
+      switch (error.code) {
+        case 'auth/email-already-in-use':
+          errorMessage = 'Email is already in use';
+          break;
+        case 'auth/invalid-email':
+          errorMessage = 'Invalid email address';
+          break;
+        case 'auth/weak-password':
+          errorMessage = 'Password is too weak';
+          break;
+      }
+
+      Alert.alert('Registration Error', errorMessage);
+      console.error("Error registering user:", error);
+    }
+  };
+
   return (
     <>
       <StatusBar hidden />
       <ImageBackground
-        source={images.onboarding2}
+        source={images.reg}
         style={styles.backgroundImage}
         resizeMode="cover"
       >
-        <View style={styles.overlay} />
+        {/*make the bakcground image or background colour darken so taht the above thing is clearly visible */}
+        <View style={styles.overlay} />    
+
 
         <SafeAreaView style={styles.contentContainer}>
-          <ScrollView
+          <ScrollView 
             style={styles.scrollView}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollViewContent}
+            
           >
             <View style={styles.headerContainer}>
-              <Text style={styles.headerText}>Welcome Back</Text>
+              <Text style={styles.headerText}>Create Account</Text>
               <Text style={styles.subHeaderText}>
-                Sign in to track your attendance
+                Register to track your attendance
               </Text>
             </View>
 
-            <View style={styles.formContainer}>
+            <BlurView intensity={90} tint="dark" style={styles.formContainer}>
               <View style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>
-                  <Ionicons name="mail-outline" size={16} color="#555" /> Email
+                  <Ionicons name="mail-outline" size={16} color="white" /> Email
                   Address
                 </Text>
                 <TextInput
@@ -70,12 +117,14 @@ export default function SignIn() {
                   onChangeText={setEmail}
                   onFocus={() => setFocused("email")}
                   onBlur={() => setFocused(null)}
+                  // backgroundColor="transparent"
+
                 />
               </View>
 
               <View style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>
-                  <Ionicons name="lock-closed-outline" size={16} color="#555" />{" "}
+                  <Ionicons name="lock-closed-outline" size={16} color="white" />{" "}
                   Password
                 </Text>
                 <View style={styles.passwordContainer}>
@@ -108,22 +157,19 @@ export default function SignIn() {
                   </TouchableOpacity>
                 </View>
               </View>
-
-              <TouchableOpacity style={styles.forgotPassword}>
-                <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-              </TouchableOpacity>
-            </View>
+            </BlurView>
 
             <View style={styles.buttonContainer}>
               <TouchableOpacity
                 style={styles.button}
                 activeOpacity={0.8}
                 onPress={() => {
-                  console.log("Sign In data:", { email, password });
-                  router.replace("/Home/HomePage");
+                  handleRegister();
+                  console.log("Registration data:", { email, password });
+                  router.replace("/auth/Signin");
                 }}
               >
-                <Text style={styles.buttonText}>Sign In</Text>
+                <Text style={styles.buttonText}>Register Now</Text>
                 <Ionicons name="arrow-forward" size={20} color="#FFF" />
               </TouchableOpacity>
 
@@ -143,10 +189,10 @@ export default function SignIn() {
                 <Text style={styles.googleButtonText}>Sign in with Google</Text>
               </TouchableOpacity>
 
-              <View style={styles.registerLinkContainer}>
-                <Text style={styles.registerText}>Don't have an account? </Text>
-                <Link href="/Register" style={styles.registerLink}>
-                  <Text style={styles.registerLinkText}>Register</Text>
+              <View style={styles.loginLinkContainer}>
+                <Text style={styles.loginText}>Already have an account? </Text>
+                <Link href="/auth/Signin" style={styles.loginLink}>
+                  <Text style={styles.loginLinkText}>Sign In</Text>
                 </Link>
               </View>
             </View>
@@ -156,6 +202,8 @@ export default function SignIn() {
     </>
   );
 }
+
+export default Register;
 const styles = StyleSheet.create({
   backgroundImage: {
     flex: 1,
@@ -171,12 +219,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 24,
     paddingTop: Platform.OS === "android" ? 40 : 20,
+    // backgroundColor: "#030c15",
   },
   scrollView: {
     flex: 1,
   },
   scrollViewContent: {
     paddingBottom: 30,
+    padding:30,
   },
   headerContainer: {
     marginBottom: 40,
@@ -204,38 +254,43 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   formContainer: {
-    backgroundColor: "rgba(255, 255, 255, 0.92)",
-    borderRadius: 24,
-    padding: 30,
-    marginBottom: 30,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 8,
-    marginHorizontal: 2,
+    backgroundColor: "transparent",
+    borderRadius: 15,
+    padding: 20,
+    marginTop: 30,
+    marginBottom: 20,
+    overflow: "hidden",
+    width: '100%',
+    maxWidth: 400,
+    alignSelf: 'center',
+    gap: 18,
+    borderColor: 'white',
+    borderWidth: 1.5,
   },
   inputContainer: {
-    marginBottom: 22,
+    marginBottom: 18,
+    width: '100%',
   },
   inputLabel: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#444",
+    color: "white",
+    opacity: 0.6,
     marginBottom: 10,
     marginLeft: 4,
     flexDirection: "row",
     alignItems: "center",
   },
   input: {
-    backgroundColor: "#F9F9F9",
+    // backgroundColor: "#F9F9F9",
+    backgroundColor: "transparent",
     height: 55,
     borderRadius: 16,
     paddingHorizontal: 18,
     fontSize: 16,
     borderColor: "#E8E8E8",
     borderWidth: 1.5,
-    color: "#333",
+    color: "white",
     shadowColor: "#BBB",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -244,7 +299,7 @@ const styles = StyleSheet.create({
   },
   inputFocused: {
     borderColor: "#1E90FF",
-    backgroundColor: "#FFF",
+    // backgroundColor: "#FFF",
     borderWidth: 2,
     shadowOpacity: 0.2,
   },
@@ -254,14 +309,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   passwordInput: {
-    backgroundColor: "#F9F9F9",
+    // backgroundColor: "#F9F9F9",
+    backgroundColor: "transparent",
     height: 55,
     borderRadius: 16,
     paddingHorizontal: 18,
     fontSize: 16,
     borderColor: "#E8E8E8",
     borderWidth: 1.5,
-    color: "#333",
+    color: "white",
     shadowColor: "#BBB",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -275,23 +331,31 @@ const styles = StyleSheet.create({
     padding: 5,
   },
   buttonContainer: {
-    width: "100%",
-    alignItems: "center",
+    width: '100%',
+    alignItems: 'center',
+    gap: 18,
+    marginTop: 12,
+    marginBottom: 10,
+    maxWidth: 400,
+    alignSelf: 'center',
   },
   button: {
     backgroundColor: "#1E90FF",
-    paddingVertical: 18,
+    paddingVertical: 16,
+    // paddingHorizontal: 40,
     borderRadius: 30,
     alignItems: "center",
-    marginBottom: 24,
+    marginBottom: 0,
     shadowColor: "#1E90FF",
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
+    shadowOpacity: 0.28,
     shadowRadius: 10,
     elevation: 6,
-    width: width - 60,
+    width: '100%',
+    maxWidth: 400,
     flexDirection: "row",
     justifyContent: "center",
+    gap: 6,
   },
   buttonText: {
     color: "#FFF",
@@ -319,7 +383,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 10,
+    marginTop: -6,
     backgroundColor: "rgba(0, 0, 0, 0.3)",
     paddingVertical: 12,
     paddingHorizontal: 20,
@@ -333,7 +397,8 @@ const styles = StyleSheet.create({
     color: "#1E90FF",
     fontSize: 16,
     fontWeight: "bold",
-    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    backgroundColor: "rgba(18, 18, 18, 0.9)", // Charcoal black (#121212) with opacity
+
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
@@ -341,21 +406,24 @@ const styles = StyleSheet.create({
   // New styles for Sign In page and Google button
   googleButton: {
     backgroundColor: "#FFFFFF",
-    paddingVertical: 16,
+    opacity: 0.8,
+    paddingVertical: 14,
     borderRadius: 30,
     alignItems: "center",
-    marginBottom: 24,
+    marginBottom: 0,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.12,
     shadowRadius: 6,
     elevation: 3,
-    width: width - 60,
+    width: '100%',
+    maxWidth: 400,
     flexDirection: "row",
     justifyContent: "center",
+    gap: 8,
   },
   googleButtonText: {
-    color: "#444",
+    color: "#000",
     fontSize: 17,
     fontWeight: "600",
     marginLeft: 8,

@@ -8,6 +8,7 @@ const AttendanceCard = ({ subject, professor, percentage, status }) => {
       <Text style={styles.prof}>{professor}</Text>
       <Text style={styles.percent}>{percentage}%</Text>
       <Text style={styles.status}>{status}</Text>
+      {/* <percentage/> */}
     </View>
   );
 };

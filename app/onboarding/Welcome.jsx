@@ -11,8 +11,9 @@ import {
 } from "react-native";
 import { Link } from "expo-router";
 import { images } from "@/constants/images";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export default function Index() {
+export default function Welcome() {
   return (
     <View style={styles.container}>
       {/* Hide the status bar completely */}
@@ -25,7 +26,7 @@ export default function Index() {
       >
         <SafeAreaView style={styles.contentContainer}>
           <View style={styles.buttonContainer}>
-            <Link href="/Onboarding" asChild>
+            <Link href="/onboarding/Welcome2" asChild>
               <TouchableOpacity style={styles.button}>
                 <Text style={styles.buttonText}>Next</Text>
               </TouchableOpacity>

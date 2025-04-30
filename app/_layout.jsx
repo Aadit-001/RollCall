@@ -1,18 +1,18 @@
-import { Stack } from "expo-router";
-
+import React, { useEffect, useState } from "react";
+import { Redirect, Stack } from "expo-router";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { View, ActivityIndicator } from "react-native";
 
 export default function RootLayout() {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <Stack>
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="notfound" options={{ headerShown: false }} />
-        <Stack.Screen name="Onboarding" options={{ headerShown: false }} />
-        <Stack.Screen name="Register" options={{ headerShown: false }} />
-        <Stack.Screen name="Signin" options={{ headerShown: false }} />
-        <Stack.Screen name="Details" options={{ headerShown: false }} />
+    <GestureHandlerRootView style={{ flex: 1 }} >
+      <Stack screenOptions={{ headerShown: false, statusBarBackgroundColor: "black" }}>
+        {/* <Stack.Screen name="index" /> */}
+        {/* <Stack.Screen name="onboarding" /> */}
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="auth" />
+        <Stack.Screen name="notfound" />
       </Stack>
     </GestureHandlerRootView>
   );

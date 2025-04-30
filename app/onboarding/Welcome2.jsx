@@ -7,12 +7,23 @@ import {
   Text,
   TouchableOpacity,
   StatusBar,
-  Dimensions,
 } from "react-native";
-import { Link } from "expo-router";
+import { useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { images } from "@/constants/images";
 
-export default function Onboarding() {
+export default function Welcome2() {
+  const router = useRouter();
+
+  const handleCompleteOnboarding = async () => {
+    try {
+      await AsyncStorage.setItem("onboardingDone", "true"); // Mark onboarding as complete
+      router.replace("../auth/Register"); // Navigate to the main app screen
+    } catch (error) {
+      console.error("Error saving onboarding status:", error);
+    }
+  };
+
   return (
     <View style={styles.container}>
       {/* Hide the status bar completely */}
@@ -25,11 +36,9 @@ export default function Onboarding() {
       >
         <SafeAreaView style={styles.contentContainer}>
           <View style={styles.buttonContainer}>
-            <Link href="/Details" asChild>
-              <TouchableOpacity style={styles.button}>
-                <Text style={styles.buttonText}>Get Started</Text>
-              </TouchableOpacity>
-            </Link>
+            <TouchableOpacity style={styles.button} onPress={handleCompleteOnboarding}>
+              <Text style={styles.buttonText}>Get Started</Text>
+            </TouchableOpacity>
           </View>
         </SafeAreaView>
       </ImageBackground>
@@ -60,7 +69,9 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     borderRadius: 30,
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: 60,
+    width: "80%",
+    alignSelf: "center",
   },
   buttonText: {
     color: "#FFF",

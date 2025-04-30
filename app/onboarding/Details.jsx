@@ -8,20 +8,30 @@ import {
   TouchableOpacity,
   StatusBar,
   TextInput,
+  Alert,
 } from "react-native";
 import { router } from "expo-router";
 import { images } from "@/constants/images";
+import { BlurView } from "expo-blur";
 
 export default function Onboarding() {
   const [name, setName] = useState("");
   const [attendanceCriteria, setAttendanceCriteria] = useState(75);
 
-  const handleNext = () => {
-    router.push({
-      pathname: "/Register",
-      params: { name, attendanceCriteria },
-    });
-  };
+ const handleNext = () => {
+   if (name === "") {
+     Alert.alert("Please enter a name");
+     return;
+   }
+   if(attendanceCriteria < 0 || attendanceCriteria > 100) {
+     Alert.alert("Please enter a valid attendance criteria");
+     return;
+   }
+   router.push({
+     pathname: "/auth/Register",
+     params: { name, attendanceCriteria },
+   });
+ };
 
   const increaseAttendance = () => {
     if (attendanceCriteria < 100) {
@@ -44,12 +54,12 @@ export default function Onboarding() {
       <StatusBar hidden />
 
       <ImageBackground
-        source={images.register}
+        source={images.imag3}
         style={styles.backgroundImage}
         resizeMode="cover"
       >
         <SafeAreaView style={styles.contentContainer}>
-          <View style={styles.formContainer}>
+          <BlurView intensity={40} tint="dark" style={styles.formContainer}>
             <Text style={styles.label}>Name</Text>
             <TextInput
               style={styles.input}
@@ -111,7 +121,7 @@ export default function Onboarding() {
                 ))}
               </View>
             </View>
-          </View>
+          </BlurView>
 
           <View style={styles.buttonContainer}>
             <TouchableOpacity
@@ -135,8 +145,11 @@ const styles = StyleSheet.create({
   backgroundImage: {
     flex: 1,
     width: "100%",
-    height: "110%",
-    marginTop: -30,
+    height: "100%",
+    // marginTop: 30,
+    paddingTop: 30,
+    paddingBottom: 40,
+    paddingHorizontal: 30,
   },
   contentContainer: {
     flex: 1,
@@ -145,16 +158,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   formContainer: {
-    backgroundColor: "rgba(255, 255, 255, 0.85)",
+    backgroundColor: "#1E90FF",
     padding: 20,
     borderRadius: 15,
     marginBottom: 20,
+    overflow: "hidden",
+    borderColor: "#fff",
+    borderWidth: 1,
   },
   label: {
     fontSize: 16,
     fontWeight: "600",
     marginBottom: 8,
-    color: "#333",
+    color: "#fff",
   },
   input: {
     backgroundColor: "#fff",
@@ -164,7 +180,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: "#fff",
   },
   attendanceContainer: {
     flexDirection: "row",
@@ -242,6 +258,8 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     alignItems: "center",
     marginBottom: 20,
+    width: "94%",
+    alignSelf: "center",
   },
   buttonText: {
     color: "#FFF",

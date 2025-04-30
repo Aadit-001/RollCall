@@ -4,10 +4,31 @@ import Octicons from "react-native-vector-icons/Octicons";
 import Foundation from "react-native-vector-icons/Foundation";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useState, useEffect } from "react";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import Welcome from "../onboarding/Welcome";
 
 export default function TabLayout() {
+  const [isOnboardingDone, setIsOnboardingDone] = useState(false);
+
+  useEffect(() => {
+    const checkOnboardingStatus = async () => {
+      try {
+        const onboardingDone = await AsyncStorage.getItem('onboardingDone');
+        setIsOnboardingDone(onboardingDone === 'true');
+      } catch (error) {
+        console.error('Error checking onboarding status:', error);
+      }
+    };
+
+    checkOnboardingStatus();
+  }, []);
+
   return (
-    <Tabs
+    <SafeAreaProvider>
+      {isOnboardingDone ? (
+        <Tabs
       screenOptions={{
         // headerShown: true,
         tabBarActiveTintColor: "#40E0D0", //ye hai jo active hai uske liye color
@@ -15,8 +36,8 @@ export default function TabLayout() {
         tabBarStyle: {
           backgroundColor: "#000",
           height: 70,
-          borderTopLeftRadius: 20,
-          borderTopRightRadius: 20,
+          width: "90%",
+          borderRadius: 20,
           paddingTop: 10,
           paddingBottom: 10,
           paddingLeft: 10,
@@ -24,15 +45,17 @@ export default function TabLayout() {
           borderTopWidth: 0,
           borderWidth: 0,
           position: "absolute",
-          bottom: 0,
-          left: 0,
-          right: 0,
+          bottom: 10,
+          marginLeft: "5%",
+          // right: "5%",
+          // marginHorizontal: 20,
           zIndex: 1000,
         },
+        // headerStatusBarHeight: 0,
       }}
     >
       <Tabs.Screen
-        name="Home"
+        name="index"
         options={{
           headerShown: true,
           headerTitle: () => (
@@ -134,7 +157,10 @@ export default function TabLayout() {
             ),
         }}
       />
-    </Tabs>
+        </Tabs> ) : (
+          <Welcome />
+        )}
+    </SafeAreaProvider>
   );
 }
 

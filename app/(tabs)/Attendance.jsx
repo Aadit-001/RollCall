@@ -1,7 +1,9 @@
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, Text } from 'react-native';
 import React, { useState } from 'react';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import { ScrollView } from 'react-native-gesture-handler';
+import { FlatList } from 'react-native-gesture-handler';
+import { MaterialIcons } from '@expo/vector-icons';
+import { TouchableOpacity } from 'react-native';
 import AttendanceCard from '@/components/AttendanceCard';
 
 const attendanceData = [
@@ -29,6 +31,54 @@ const attendanceData = [
     professor: 'Rupali Sawant',
     percentage: 45,
   },
+  {
+    id: '5',
+    subject: 'DBMS',
+    professor: 'Rupali Sawant',
+    percentage: 45,
+  },
+  {
+    id: '6',
+    subject: 'DBMS',
+    professor: 'Rupali Sawant',
+    percentage: 45,
+  },
+  {
+    id: '7',
+    subject: 'DBMS',
+    professor: 'Rupali Sawant',
+    percentage: 45,
+  },
+  {
+    id: '8',
+    subject: 'DBMS',
+    professor: 'Rupali Sawant',
+    percentage: 45,
+  },
+  {
+    id: '9',
+    subject: 'DBMS',
+    professor: 'Rupali Sawant',
+    percentage: 45,
+  },
+  {
+    id: '10',
+    subject: 'DBMS',
+    professor: 'Rupali Sawant',
+    percentage: 45,
+  },
+  {
+    id: '11',
+    subject: 'DBMS',
+    professor: 'Rupali Sawant',
+    percentage: 45,
+  },
+  {
+    id: '12',
+    subject: 'DBMS',
+    professor: 'Rupali Sawant',
+    percentage: 45,
+  },
 ];
 
 const Attendance = () => {
@@ -37,24 +87,27 @@ const Attendance = () => {
   const [total, setTotal] = useState(23);
   const bunkable = 5; // This can be calculated based on business logic
 
+  // const hasTimetable = true;
+
   return (
-    <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {attendanceData.map((item, idx) => {
-          // Color and status logic
-          let circleColor = '#24c46b';
-          return (
+    <SafeAreaProvider>
+      <SafeAreaView style={styles.container}>
+        <FlatList
+        data={attendanceData}
+        keyExtractor={item => item.id}
+          renderItem={({ item }) => (
             <AttendanceCard
-              key={item.id}
               subject={item.subject}
               professor={item.professor}
               percentage={item.percentage}
-              // status={status}
+              // status={item.status}
             />
-          );
-        })}
-      </ScrollView>
-    </View>
+          )}
+        // ScrollBar={false}
+        showsVerticalScrollIndicator={false}
+        />
+      </SafeAreaView>
+    </SafeAreaProvider>
   );
 };
 
@@ -66,6 +119,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#181818',
     paddingTop: 18,
     paddingHorizontal: 8,
+    paddingBottom: 88,
   },
   scrollContent: {
     paddingBottom: 32,

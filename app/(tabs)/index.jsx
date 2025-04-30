@@ -1,9 +1,11 @@
 import { StyleSheet, Text, View, TouchableOpacity, TextInput } from 'react-native';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import { ScrollView, FlatList } from 'react-native-gesture-handler';
+import { ScrollView, FlatList, Pressable } from 'react-native-gesture-handler';
 import { Ionicons, MaterialIcons, FontAwesome } from '@expo/vector-icons';
-
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Welcome from '../onboarding/Welcome';
+import { useRouter } from 'expo-router';
 const lecturesSample = [
   {
     id: '1',
@@ -11,99 +13,102 @@ const lecturesSample = [
     professor: 'Prof. Rupali Sawant',
   },
   {
-    id: '1',
+    id: '2',
     name: 'DBMS',
     professor: 'Prof. Rupali Sawant',
   },
   {
-    id: '1',
+    id: '3',
     name: 'DBMS',
     professor: 'Prof. Rupali Sawant',
   },
   {
-    id: '1',
+    id: '4',
     name: 'DBMS',
     professor: 'Prof. Rupali Sawant',
   },
   {
-    id: '1',
+    id: '5',
     name: 'DBMS',
     professor: 'Prof. Rupali Sawant',
   },
   {
-    id: '1',
+    id: '6',
     name: 'DBMS',
     professor: 'Prof. Rupali Sawant',
   },
   {
-    id: '1',
+    id: '7',
     name: 'DBMS',
     professor: 'Prof. Rupali Sawant',
   },
   {
-    id: '1',
+    id: '8',
     name: 'DBMS',
     professor: 'Prof. Rupali Sawant',
   },
-  // Add more lectures if needed
 ];
 
 const Home = () => {
   const [lectures, setLectures] = useState(lecturesSample); // Replace with real data
   const [hasTimetable, setHasTimetable] = useState(true); // Set to false to show 'add TT' message
+  
+const deleteOnboardingData = async () => {
+  try {
+    await AsyncStorage.removeItem('onboardingDone');
+    router.replace('/onboarding/Welcome');
+  } catch (error) {
+    console.error('Error deleting onboarding data:', error);
+  }
+};
+
+const router = useRouter();
 
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
-        <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-          {/* Welcome Box */}
-          <View style={styles.topBox}>
-            <Text style={styles.topBoxText}>Welcome To</Text>
-            <Text style={styles.topBoxTextName}>R O L L C A L L</Text>
-          </View>
-          {/* Today's Lectures Title */}
-          <View style={styles.bottomBoxTittle}>
-            <Text style={styles.bottomBoxTittleText}>Today's Lectures</Text>
-          </View>
-          {/* Timetable or Placeholder */}
-          {hasTimetable ? (
-            <FlatList
-              data={lectures}
-              keyExtractor={item => item.id}
-              renderItem={({ item }) => (
-                <View style={styles.lectureCard}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.lectureName}>{item.name}</Text>
-                    <Text style={styles.profName}>{item.professor}</Text>
-                  </View>
-                  <View style={styles.attendanceBtns}>
-                    <TouchableOpacity style={styles.attendanceBtnRed}>
-                      <MaterialIcons name="close" size={32} color="#fff" />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.attendanceBtnGreen}>
-                      <MaterialIcons name="check" size={32} color="#fff" />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              )}
-              style={{ width: '95%', alignSelf: 'center', marginTop: 10 }}
-            />
-          ) : (
-            <View style={styles.ttPlaceholderBox}>
-              <Text style={styles.ttPlaceholderText}>Please add your TT first ……</Text>
+        <FlatList
+          ListHeaderComponent={
+            <>
+              {/* Welcome Box */}
+              <Pressable style={styles.topBox} onPress={deleteOnboardingData}>
+                <Text style={styles.topBoxText}>Welcome To</Text>
+                <Text style={styles.topBoxTextName}>R O L L C A L L</Text>
+              </Pressable>
+              {/* Today's Lectures Title */}
+              <View style={styles.bottomBoxTittle}>
+                <Text style={styles.bottomBoxTittleText}>Today's Lectures</Text>
+              </View>
+            </>
+          }
+          data={hasTimetable ? lectures : []}
+          keyExtractor={item => item.id}
+          renderItem={({ item }) => (
+            <View style={styles.lectureCard}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.lectureName}>{item.name}</Text>
+                <Text style={styles.profName}>{item.professor}</Text>
+              </View>
+              <View style={styles.attendanceBtns}>
+                <TouchableOpacity style={styles.attendanceBtnRed}>
+                  <MaterialIcons name="close" size={32} color="#fff" />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.attendanceBtnGreen}>
+                  <MaterialIcons name="check" size={32} color="#fff" />
+                </TouchableOpacity>
+              </View>
             </View>
           )}
-          {/* Add Timetable Button */}
-          {/* <TouchableOpacity style={styles.addTTBtn}>
-            <Text style={styles.addTTBtnText}>+ Add your time table</Text>
-          </TouchableOpacity> */}
-        </ScrollView>
-        {/* Bottom Navigation Bar */}
-        {/* <View style={styles.bottomNav}>
-          <TouchableOpacity style={styles.navIcon}><Ionicons name="ios-school" size={28} color="#3fa4ff" /></TouchableOpacity>
-          <TouchableOpacity style={styles.navIcon}><MaterialIcons name="assignment" size={28} color="#fff" /></TouchableOpacity>
-          <TouchableOpacity style={styles.navIcon}><FontAwesome name="pie-chart" size={28} color="#fff" /></TouchableOpacity>
-        </View> */}
+          ListEmptyComponent={
+            !hasTimetable && (
+              <View style={styles.ttPlaceholderBox}>
+                <Text style={styles.ttPlaceholderText}>Please add your TT first ……</Text>
+              </View>
+            )
+          }
+          contentContainerStyle={{ width: '95%', alignSelf: 'center' }}
+          style={{ flex: 1 }}
+        />
       </SafeAreaView>
     </SafeAreaProvider>
   );
@@ -115,6 +120,7 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: '#181818',
     flex: 1,
+    paddingBottom: 88, // Add padding to bottom
   },
   header: {
     flexDirection: 'row',

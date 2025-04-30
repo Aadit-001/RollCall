@@ -15,10 +15,14 @@ import {
 import { Link, router } from "expo-router";
 import { images } from "@/constants/images";
 import { Ionicons } from "@expo/vector-icons";
+import { BlurView } from "expo-blur";
+import { auth } from "./firebaseConfig";
+import { signInWithEmailAndPassword } from "firebase/auth";
+
 
 const { width } = Dimensions.get("window");
 
-export default function Register() {
+export default function SignIn() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordVisibility, setPasswordVisibility] = useState(true);
@@ -28,11 +32,38 @@ export default function Register() {
     setPasswordVisibility(!passwordVisibility);
   };
 
+  const handleSignIn = async () => {
+    try {
+      
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      console.log('Signed in user:', user.uid);
+      router.replace("/");
+    } catch (error) {
+      let errorMessage = 'Sign in failed';
+      
+      switch (error.code) {
+        case 'auth/invalid-email':
+          errorMessage = 'Invalid email address';
+          break;
+        case 'auth/user-not-found':
+          errorMessage = 'User not found';
+          break;
+        case 'auth/wrong-password':
+          errorMessage = 'Incorrect password';
+          break;
+      }
+
+      Alert.alert('Sign In Error', errorMessage);
+      console.error("Error signing in user:", error);
+    }
+  };
+
   return (
     <>
       <StatusBar hidden />
       <ImageBackground
-        source={images.onboarding2}
+        source={images.reg}
         style={styles.backgroundImage}
         resizeMode="cover"
       >
@@ -45,16 +76,16 @@ export default function Register() {
             contentContainerStyle={styles.scrollViewContent}
           >
             <View style={styles.headerContainer}>
-              <Text style={styles.headerText}>Create Account</Text>
+              <Text style={styles.headerText}>Welcome Back</Text>
               <Text style={styles.subHeaderText}>
-                Register to track your attendance
+                Sign in to track your attendance
               </Text>
             </View>
 
-            <View style={styles.formContainer}>
+            <BlurView intensity={90} tint="dark" style={styles.formContainer}>
               <View style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>
-                  <Ionicons name="mail-outline" size={16} color="#555" /> Email
+                  <Ionicons name="mail-outline" size={16} color="white" /> Email
                   Address
                 </Text>
                 <TextInput
@@ -75,7 +106,7 @@ export default function Register() {
 
               <View style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>
-                  <Ionicons name="lock-closed-outline" size={16} color="#555" />{" "}
+                  <Ionicons name="lock-closed-outline" size={16} color="white" />{" "}
                   Password
                 </Text>
                 <View style={styles.passwordContainer}>
@@ -108,18 +139,23 @@ export default function Register() {
                   </TouchableOpacity>
                 </View>
               </View>
-            </View>
+
+              <TouchableOpacity style={styles.forgotPassword}>
+                <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+              </TouchableOpacity>
+            </BlurView>
 
             <View style={styles.buttonContainer}>
               <TouchableOpacity
                 style={styles.button}
                 activeOpacity={0.8}
                 onPress={() => {
-                  console.log("Registration data:", { email, password });
-                  router.replace("/Signin");
+                  handleSignIn();
+                  console.log("Sign In data:", { email, password });
+                  // router.replace("/Home");
                 }}
               >
-                <Text style={styles.buttonText}>Register Now</Text>
+                <Text style={styles.buttonText}>Sign In</Text>
                 <Ionicons name="arrow-forward" size={20} color="#FFF" />
               </TouchableOpacity>
 
@@ -139,10 +175,10 @@ export default function Register() {
                 <Text style={styles.googleButtonText}>Sign in with Google</Text>
               </TouchableOpacity>
 
-              <View style={styles.loginLinkContainer}>
-                <Text style={styles.loginText}>Already have an account? </Text>
-                <Link href="/Signin" style={styles.loginLink}>
-                  <Text style={styles.loginLinkText}>Sign In</Text>
+              <View style={styles.registerLinkContainer}>
+                <Text style={styles.registerText}>Don't have an account? </Text>
+                <Link href="/auth/Register" style={styles.registerLink}>
+                  <Text style={styles.registerLinkText}>Register</Text>
                 </Link>
               </View>
             </View>
@@ -173,6 +209,7 @@ const styles = StyleSheet.create({
   },
   scrollViewContent: {
     paddingBottom: 30,
+    padding: 30,
   },
   headerContainer: {
     marginBottom: 40,
@@ -200,16 +237,18 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   formContainer: {
-    backgroundColor: "rgba(255, 255, 255, 0.92)",
-    borderRadius: 24,
-    padding: 30,
-    marginBottom: 30,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 8,
-    marginHorizontal: 2,
+    backgroundColor: "transparent",
+    borderRadius: 15,
+    padding: 20,
+    marginTop: 30,
+    marginBottom: 20,
+    overflow: "hidden",
+    width: '100%',
+    maxWidth: 400,
+    alignSelf: 'center',
+    gap: 18,
+    borderColor: 'white',
+    borderWidth: 1.5,
   },
   inputContainer: {
     marginBottom: 22,
@@ -217,21 +256,22 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#444",
+    color: "white",
+    opacity: 0.6,
     marginBottom: 10,
     marginLeft: 4,
     flexDirection: "row",
     alignItems: "center",
   },
   input: {
-    backgroundColor: "#F9F9F9",
+    backgroundColor: "transparent",
     height: 55,
     borderRadius: 16,
     paddingHorizontal: 18,
     fontSize: 16,
     borderColor: "#E8E8E8",
     borderWidth: 1.5,
-    color: "#333",
+    color: "white",
     shadowColor: "#BBB",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -240,7 +280,7 @@ const styles = StyleSheet.create({
   },
   inputFocused: {
     borderColor: "#1E90FF",
-    backgroundColor: "#FFF",
+    // backgroundColor: "#FFF",
     borderWidth: 2,
     shadowOpacity: 0.2,
   },
@@ -250,14 +290,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   passwordInput: {
-    backgroundColor: "#F9F9F9",
+    backgroundColor: "transparent",
     height: 55,
     borderRadius: 16,
     paddingHorizontal: 18,
     fontSize: 16,
     borderColor: "#E8E8E8",
     borderWidth: 1.5,
-    color: "#333",
+    color: "white",
     shadowColor: "#BBB",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -276,7 +316,7 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: "#1E90FF",
-    paddingVertical: 18,
+    paddingVertical: 16,
     borderRadius: 30,
     alignItems: "center",
     marginBottom: 24,
@@ -329,8 +369,7 @@ const styles = StyleSheet.create({
     color: "#1E90FF",
     fontSize: 16,
     fontWeight: "bold",
-    backgroundColor: "rgba(18, 18, 18, 0.9)", // Charcoal black (#121212) with opacity
-
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
@@ -338,28 +377,31 @@ const styles = StyleSheet.create({
   // New styles for Sign In page and Google button
   googleButton: {
     backgroundColor: "#FFFFFF",
-    paddingVertical: 16,
+    opacity: 0.8,
+    paddingVertical: 14,
     borderRadius: 30,
     alignItems: "center",
-    marginBottom: 24,
+    marginBottom: 0,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.12,
     shadowRadius: 6,
     elevation: 3,
-    width: width - 60,
+    width: '100%',
+    maxWidth: 400,
     flexDirection: "row",
     justifyContent: "center",
+    gap: 8,
   },
   googleButtonText: {
-    color: "#444",
+    color: "#000",
     fontSize: 17,
     fontWeight: "600",
     marginLeft: 8,
   },
   forgotPassword: {
     alignSelf: "flex-end",
-    marginTop: 0,
+    marginTop: -20,
   },
   forgotPasswordText: {
     color: "#1E90FF",

@@ -105,6 +105,7 @@ const Attendance = () => {
           )}
         // ScrollBar={false}
         showsVerticalScrollIndicator={false}
+        ListFooterComponent={<View style={styles.scrollContent} />}
         />
       </SafeAreaView>
     </SafeAreaProvider>
@@ -119,13 +120,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#181818',
     paddingTop: 18,
     paddingHorizontal: 8,
-    paddingBottom: 88,
+    // paddingBottom: 88,
   },
   scrollContent: {
     paddingBottom: 32,
     flex: 1,
     backgroundColor: '#181818',
-    paddingTop: 18,
+    paddingTop: 56,
     paddingHorizontal: 8,
   },
   // Old card style not used in new design

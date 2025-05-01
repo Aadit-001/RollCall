@@ -78,6 +78,9 @@ function Register() {
     }
   };
 
+
+  
+
   return (
     <>
       <StatusBar hidden />

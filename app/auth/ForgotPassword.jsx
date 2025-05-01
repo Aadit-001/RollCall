@@ -109,10 +109,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
   },
-  buttonDisabled: {
-    backgroundColor: '#666',
-    opacity: 0.5,
-  },
   buttonText: {
     color: '#fff',
     fontSize: 18,

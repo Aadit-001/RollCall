@@ -7,6 +7,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getAuth, signOut } from 'firebase/auth';
 import Welcome from '../onboarding/Welcome';
 import { useRouter } from 'expo-router';
+import AttendancePercentageFinder from '@/components/AttendancePercentageFinder';
+
 const lecturesSample = [
   {
     id: '1',
@@ -53,18 +55,35 @@ const lecturesSample = [
 const Home = () => {
   const [lectures, setLectures] = useState(lecturesSample); // Replace with real data
   const [hasTimetable, setHasTimetable] = useState(true); // Set to false to show 'add TT' message
-  
-const deleteOnboardingData = async () => {
-  try {
-    await AsyncStorage.removeItem('onboardingDone');
-    router.replace('/onboarding/Welcome');
-  } catch (error) {
-    console.error('Error deleting onboarding data:', error);
-  }
-};
+  const [showAttendanceFinder, setShowAttendanceFinder] = useState(false);
 
-const router = useRouter();
-const auth = getAuth();
+  useEffect(() => {
+    const checkAttendancePercentage = async () => {
+      try {
+        const percentage = await AsyncStorage.getItem('percentage');
+        if (!percentage) {
+          setShowAttendanceFinder(true);
+        }
+      } catch (error) {
+        console.error('Error checking attendance percentage:', error);
+      }
+    };
+
+    checkAttendancePercentage();
+  }, [])
+
+  const deleteOnboardingData = async () => {
+    try {
+      await AsyncStorage.removeItem('onboardingDone');
+      await AsyncStorage.removeItem('percentage');
+      router.replace('/onboarding/Welcome');
+    } catch (error) {
+      console.error('Error deleting onboarding data:', error);
+    }
+  };
+
+  const router = useRouter();
+  const auth = getAuth();
 
   const handleLogout = async () => {
     try {
@@ -81,6 +100,11 @@ const auth = getAuth();
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
+        {showAttendanceFinder && (
+          <AttendancePercentageFinder 
+            onClose={() => setShowAttendanceFinder(false)} 
+          />
+        )}
         <FlatList
           ListHeaderComponent={
             <>
@@ -124,12 +148,13 @@ const auth = getAuth();
           style={{ flex: 1 }}
         />
         {/* Logout Button */}
-        <TouchableOpacity 
-          style={styles.logoutButton} 
+        <TouchableOpacity
+          style={styles.logoutButton}
           onPress={handleLogout}
         >
           <Text style={styles.logoutButtonText}>Logout</Text>
         </TouchableOpacity>
+        {/* <View style={styles.scrolle}></View> */}
       </SafeAreaView>
     </SafeAreaProvider>
   );
@@ -145,6 +170,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 20,
     marginHorizontal: 20,
+    marginBottom: 100,   //ye chnage karne pe niche ka margin change higa
+  },
+  scrolle: {
+    // paddingBottom: 10,
+    // flex: 1,
+    backgroundColor: '#181818',
+    // paddingTop: 5,
+    // paddingHorizontal: 8,
   },
   logoutButtonText: {
     color: '#FFFFFF',
@@ -154,7 +187,7 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: '#181818',
     flex: 1,
-    paddingBottom: 88, // Add padding to bottom
+    // paddingBottom: 88, // Add padding to bottom
   },
   header: {
     flexDirection: 'row',
@@ -293,5 +326,21 @@ const styles = StyleSheet.create({
   navIcon: {
     flex: 1,
     alignItems: 'center',
+  },
+  attendanceContainer: {
+    // display: 'absolute',
+    position: 'absolute',
+    flex: 1,
+    backgroundColor: 'transparent',
+    // borderRadius: 10,
+    padding: 16,
+    // width: '100%',
+    alignSelf: 'center',
+    justifyContent: 'center',
+    alignItems: 'center',
+    // height: '100%',
+    // marginBottom: 12,
+    // marginTop: 6,
+    zIndex: 9999,
   },
 });

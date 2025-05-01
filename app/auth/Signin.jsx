@@ -18,6 +18,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { auth } from "./firebaseConfig";
 import { signInWithEmailAndPassword } from "firebase/auth";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 
 const { width } = Dimensions.get("window");
@@ -37,6 +38,7 @@ export default function SignIn() {
       
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
+      await AsyncStorage.setItem('userToken', user.uid);
       console.log('Signed in user:', user.uid);
       router.replace("/");
     } catch (error) {
@@ -59,6 +61,10 @@ export default function SignIn() {
     }
   };
 
+  const handleForgotPassword = () => {
+    router.replace('/auth/ForgotPassword');
+  };
+
   return (
     <>
       <StatusBar hidden />
@@ -67,7 +73,7 @@ export default function SignIn() {
         style={styles.backgroundImage}
         resizeMode="cover"
       >
-        <View style={styles.overlay} />
+        {/* <View style={styles.overlay} /> */}
 
         <SafeAreaView style={styles.contentContainer}>
           <ScrollView
@@ -140,7 +146,7 @@ export default function SignIn() {
                 </View>
               </View>
 
-              <TouchableOpacity style={styles.forgotPassword}>
+              <TouchableOpacity style={styles.forgotPassword} onPress={handleForgotPassword}>
                 <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
               </TouchableOpacity>
             </BlurView>
@@ -201,7 +207,7 @@ const styles = StyleSheet.create({
   contentContainer: {
     flex: 1,
     justifyContent: "center",
-    paddingHorizontal: 24,
+    paddingHorizontal: 12,
     paddingTop: Platform.OS === "android" ? 40 : 20,
   },
   scrollView: {
@@ -325,7 +331,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.35,
     shadowRadius: 10,
     elevation: 6,
-    width: width - 60,
+    width: "100%",
     flexDirection: "row",
     justifyContent: "center",
   },

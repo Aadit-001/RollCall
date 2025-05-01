@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc, collection, addDoc, getFirestore, Timestamp } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { auth } from './firebaseConfig';
+import { auth, db } from './firebaseConfig';
 import { Alert } from 'react-native';
 import {
   SafeAreaView,
@@ -25,6 +26,7 @@ import { BlurView } from "expo-blur";
 const { width } = Dimensions.get("window");
 
 function Register() {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordVisibility, setPasswordVisibility] = useState(true);
@@ -36,25 +38,27 @@ function Register() {
 
   const handleRegister = async () => {
     try {
-
-      // Basic validation
-      if (!email || !password) {
-        Alert.alert('Error', 'Please enter both email and password');
+      if (!name || !email || !password) {
+        Alert.alert('Error', 'Please fill in all fields');
         return;
       }
 
-      // Firebase registration
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      console.log('Registered user:', user.uid);
-      
-      // Navigate to Home after successful registration
-      router.replace("./Signin");
+      const userDoc = doc(db, 'users', user.uid);
+      await setDoc(userDoc, {
+        uid: user.uid,
+        name: name,
+        email: email,
+        createdAt: Timestamp.now()
+      });
+
+      await AsyncStorage.setItem('userName', name);
+      router.replace('./Signin');
     } catch (error) {
-      // Handle specific Firebase auth errors
       let errorMessage = 'Registration failed';
-      
+
       switch (error.code) {
         case 'auth/email-already-in-use':
           errorMessage = 'Email is already in use';
@@ -65,6 +69,8 @@ function Register() {
         case 'auth/weak-password':
           errorMessage = 'Password is too weak';
           break;
+        default:
+          errorMessage = error.message || 'An unexpected error occurred';
       }
 
       Alert.alert('Registration Error', errorMessage);
@@ -81,15 +87,15 @@ function Register() {
         resizeMode="cover"
       >
         {/*make the bakcground image or background colour darken so taht the above thing is clearly visible */}
-        <View style={styles.overlay} />    
+        {/* <View style={styles.overlay} />     */}
 
 
         <SafeAreaView style={styles.contentContainer}>
-          <ScrollView 
+          <ScrollView
             style={styles.scrollView}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollViewContent}
-            
+
           >
             <View style={styles.headerContainer}>
               <Text style={styles.headerText}>Create Account</Text>
@@ -99,6 +105,28 @@ function Register() {
             </View>
 
             <BlurView intensity={90} tint="dark" style={styles.formContainer}>
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>
+                  <Ionicons name="mail-outline" size={16} color="white" /> Name
+                </Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    focused === "name" && styles.inputFocused,
+                  ]}
+                  placeholder="Enter your name"
+                  placeholderTextColor="#AAA"
+                  keyboardType="default"
+                  autoCapitalize="none"
+                  value={name}
+                  onChangeText={setName}
+                  onFocus={() => setFocused("name")}
+                  onBlur={() => setFocused(null)}
+                // backgroundColor="transparent"
+
+                />
+              </View>
+
               <View style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>
                   <Ionicons name="mail-outline" size={16} color="white" /> Email
@@ -117,7 +145,7 @@ function Register() {
                   onChangeText={setEmail}
                   onFocus={() => setFocused("email")}
                   onBlur={() => setFocused(null)}
-                  // backgroundColor="transparent"
+                // backgroundColor="transparent"
 
                 />
               </View>
@@ -163,11 +191,7 @@ function Register() {
               <TouchableOpacity
                 style={styles.button}
                 activeOpacity={0.8}
-                onPress={() => {
-                  handleRegister();
-                  console.log("Registration data:", { email, password });
-                  router.replace("/auth/Signin");
-                }}
+                onPress={handleRegister}
               >
                 <Text style={styles.buttonText}>Register Now</Text>
                 <Ionicons name="arrow-forward" size={20} color="#FFF" />
@@ -217,7 +241,7 @@ const styles = StyleSheet.create({
   contentContainer: {
     flex: 1,
     justifyContent: "center",
-    paddingHorizontal: 24,
+    paddingHorizontal: 12,
     paddingTop: Platform.OS === "android" ? 40 : 20,
     // backgroundColor: "#030c15",
   },
@@ -226,11 +250,11 @@ const styles = StyleSheet.create({
   },
   scrollViewContent: {
     paddingBottom: 30,
-    padding:30,
+    padding: 30,
   },
   headerContainer: {
     marginBottom: 40,
-    marginTop: 60,
+    marginTop: 30,
     alignItems: "center",
   },
   headerText: {
@@ -257,7 +281,7 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
     borderRadius: 15,
     padding: 20,
-    marginTop: 30,
+    // marginTop: 30,
     marginBottom: 20,
     overflow: "hidden",
     width: '100%',
@@ -268,7 +292,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
   },
   inputContainer: {
-    marginBottom: 18,
+    marginBottom: 10,
     width: '100%',
   },
   inputLabel: {
@@ -334,7 +358,16 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     gap: 18,
-    marginTop: 12,
+    marginTop: 4,
+    marginBottom: 10,
+    maxWidth: 400,
+    alignSelf: 'center',
+  },
+  buttonContainerGoogle: {
+    width: '100%',
+    alignItems: 'center',
+    gap: 18,
+    marginTop: 4,
     marginBottom: 10,
     maxWidth: 400,
     alignSelf: 'center',
@@ -366,7 +399,7 @@ const styles = StyleSheet.create({
   dividerContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginVertical: 15,
+    marginVertical: 2,
     width: "90%",
   },
   divider: {

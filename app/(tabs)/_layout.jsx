@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
 import Octicons from "react-native-vector-icons/Octicons";
 import Foundation from "react-native-vector-icons/Foundation";
 import Ionicons from "react-native-vector-icons/Ionicons";
@@ -8,9 +8,30 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useState, useEffect } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import Welcome from "../onboarding/Welcome";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
+import Signin from "../auth/Signin";
+import Register from "../auth/Register";
+
 
 export default function TabLayout() {
+  // Styles for loading screen
+  const styles = StyleSheet.create({
+    loadingContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: '#000', // Match your app's background
+    },
+    loadingText: {
+      color: '#40E0D0',
+      fontSize: 18,
+      marginBottom: 20,
+    }
+  });
   const [isOnboardingDone, setIsOnboardingDone] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [initializing, setInitializing] = useState(true);
+  const [name, setName] = useState('');
 
   useEffect(() => {
     const checkOnboardingStatus = async () => {
@@ -25,10 +46,39 @@ export default function TabLayout() {
     checkOnboardingStatus();
   }, []);
 
+  useEffect(() => {
+    const auth = getAuth();
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setIsLoggedIn(!!user);
+      if (initializing) setInitializing(false);
+    });
+
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    AsyncStorage.getItem('userName').then(name => {
+      if (name) {
+        setName(name);
+      }
+    });
+  },[])
+
+  if (initializing) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text style={styles.loadingText}>Loading...</Text>
+        <ActivityIndicator size="large" color="#40E0D0" />
+      </View>
+    );
+  }
+
   return (
     <SafeAreaProvider>
       {isOnboardingDone ? (
-        <Tabs
+        isLoggedIn ? (
+          <Tabs
       screenOptions={{
         // headerShown: true,
         tabBarActiveTintColor: "#40E0D0", //ye hai jo active hai uske liye color
@@ -59,9 +109,9 @@ export default function TabLayout() {
         options={{
           headerShown: true,
           headerTitle: () => (
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <View style={{ flexDirection: "row", alignItems: "baseline" }}>
               <Text style={Styles.headerTitle}>Hi, </Text>
-              <Text style={Styles.title}>Aadit Jha</Text>
+              <Text style={Styles.title}>{name}</Text>
             </View>
           ),
           headerStyle: {
@@ -157,7 +207,11 @@ export default function TabLayout() {
             ),
         }}
       />
-        </Tabs> ) : (
+        </Tabs>
+        ) : (
+          <Signin />
+        )
+      ): (
           <Welcome />
         )}
     </SafeAreaProvider>
@@ -171,8 +225,19 @@ const Styles = StyleSheet.create({
     color: "green",
   },
   title: {
-    fontSize: 32,
+    fontSize: 26,
     fontWeight: "bold",
     color: "white",
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#000', // Match your app's background
+  },
+  loadingText: {
+    color: '#40E0D0',
+    fontSize: 18,
+    marginBottom: 20,
+  }
 });

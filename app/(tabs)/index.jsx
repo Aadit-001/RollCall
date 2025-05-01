@@ -4,6 +4,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { ScrollView, FlatList, Pressable } from 'react-native-gesture-handler';
 import { Ionicons, MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getAuth, signOut } from 'firebase/auth';
 import Welcome from '../onboarding/Welcome';
 import { useRouter } from 'expo-router';
 const lecturesSample = [
@@ -63,6 +64,19 @@ const deleteOnboardingData = async () => {
 };
 
 const router = useRouter();
+const auth = getAuth();
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      // Optional: Clear any stored user data
+      await AsyncStorage.removeItem('userToken');
+      console.log('User logged out successfully');
+      // console.log(user)
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
 
   return (
     <SafeAreaProvider>
@@ -109,6 +123,13 @@ const router = useRouter();
           contentContainerStyle={{ width: '95%', alignSelf: 'center' }}
           style={{ flex: 1 }}
         />
+        {/* Logout Button */}
+        <TouchableOpacity 
+          style={styles.logoutButton} 
+          onPress={handleLogout}
+        >
+          <Text style={styles.logoutButtonText}>Logout</Text>
+        </TouchableOpacity>
       </SafeAreaView>
     </SafeAreaProvider>
   );
@@ -117,6 +138,19 @@ const router = useRouter();
 export default Home
 
 const styles = StyleSheet.create({
+  logoutButton: {
+    backgroundColor: '#FF0000',
+    padding: 15,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginTop: 20,
+    marginHorizontal: 20,
+  },
+  logoutButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
   container: {
     backgroundColor: '#181818',
     flex: 1,

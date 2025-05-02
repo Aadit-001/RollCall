@@ -293,6 +293,7 @@ const styles = StyleSheet.create({
     gap: 18,
     borderColor: 'white',
     borderWidth: 1.5,
+    
   },
   inputContainer: {
     marginBottom: 10,

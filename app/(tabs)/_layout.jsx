@@ -11,6 +11,8 @@ import Welcome from "../onboarding/Welcome";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import Signin from "../auth/Signin";
 import Register from "../auth/Register";
+import SideBar from "@/components/SideBar";
+import { TouchableOpacity } from "react-native";
 
 
 export default function TabLayout() {
@@ -32,6 +34,11 @@ export default function TabLayout() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [initializing, setInitializing] = useState(true);
   const [name, setName] = useState('');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
 
   useEffect(() => {
     const checkOnboardingStatus = async () => {
@@ -72,6 +79,10 @@ export default function TabLayout() {
         <ActivityIndicator size="large" color="#40E0D0" />
       </View>
     );
+  }
+
+  if(isSidebarOpen){
+    return <SideBar />
   }
 
   return (
@@ -119,7 +130,7 @@ export default function TabLayout() {
           },
           headerLeft: () => (
             <View style={{ marginLeft: 10, marginRight: 10 }}>
-              <Ionicons name="menu" size={32} color="white" />
+              <Ionicons name="menu" size={32} color="white" onPress={toggleSidebar}/>
             </View>
           ),
           tabBarLabel: "Home",
@@ -154,7 +165,7 @@ export default function TabLayout() {
           },
           headerLeft: () => (
             <View style={{ marginLeft: 10, marginRight: 10 }}>
-              <Ionicons name="menu" size={32} color="white" />
+              <Ionicons name="menu" size={32} color="white" onPress={toggleSidebar}/>
             </View>
           ),
           tabBarIcon: ({ color, size, focused }) =>
@@ -188,7 +199,7 @@ export default function TabLayout() {
           },
           headerLeft: () => (
             <View style={{ marginLeft: 10, marginRight: 10 }}>
-              <Ionicons name="menu" size={32} color="white" />
+              <Ionicons name="menu" size={32} color="white" onPress={toggleSidebar}/>
             </View>
           ),
           tabBarIcon: ({ color, size, focused }) =>

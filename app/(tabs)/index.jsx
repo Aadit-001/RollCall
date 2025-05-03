@@ -3,81 +3,84 @@ import {
   Text,
   View,
   TouchableOpacity,
-  TextInput,
+  SafeAreaView,
 } from "react-native";
-import React, { useState, useEffect } from "react";
-import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
-import { ScrollView, FlatList, Pressable } from "react-native-gesture-handler";
-import { Ionicons, MaterialIcons, FontAwesome } from "@expo/vector-icons";
+import React, { useState, useCallback } from "react";
+import { FlatList, Pressable } from "react-native-gesture-handler";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { getAuth, signOut } from "firebase/auth";
-import Welcome from "../onboarding/Welcome";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
 import AttendancePercentageFinder from "@/components/AttendancePercentageFinder";
 
-const lecturesSample = [
-  {
-    id: "1",
-    name: "DBMS",
-    professor: "Prof. Rupali Sawant",
-  },
-  {
-    id: "2",
-    name: "DBMS",
-    professor: "Prof. Rupali Sawant",
-  },
-  {
-    id: "3",
-    name: "DBMS",
-    professor: "Prof. Rupali Sawant",
-  },
-  {
-    id: "4",
-    name: "DBMS",
-    professor: "Prof. Rupali Sawant",
-  },
-  {
-    id: "5",
-    name: "DBMS",
-    professor: "Prof. Rupali Sawant",
-  },
-  {
-    id: "6",
-    name: "DBMS",
-    professor: "Prof. Rupali Sawant",
-  },
-  {
-    id: "7",
-    name: "DBMS",
-    professor: "Prof. Rupali Sawant",
-  },
-  {
-    id: "8",
-    name: "DBMS",
-    professor: "Prof. Rupali Sawant",
-  },
-];
+const getToday = () => {
+  const days = [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+  ];
+  return days[new Date().getDay()];
+};
 
 const Home = () => {
-  const [lectures, setLectures] = useState(lecturesSample); // Replace with real data
-  const [hasTimetable, setHasTimetable] = useState(true); // Set to false to show 'add TT' message
+  const [lectures, setLectures] = useState([]);
+  const [hasTimetable, setHasTimetable] = useState(false);
   const [showAttendanceFinder, setShowAttendanceFinder] = useState(false);
+  const router = useRouter();
 
-  useEffect(() => {
-    const checkAttendancePercentage = async () => {
-      try {
-        const percentage = await AsyncStorage.getItem("percentage");
-        if (!percentage) {
-          setShowAttendanceFinder(true);
+  useFocusEffect(
+    useCallback(() => {
+      const checkAttendancePercentage = async () => {
+        try {
+          const percentage = await AsyncStorage.getItem("percentage");
+          if (!percentage) {
+            setShowAttendanceFinder(true);
+          }
+        } catch (error) {
+          console.error("Error checking attendance percentage:", error);
         }
-      } catch (error) {
-        console.error("Error checking attendance percentage:", error);
+      };
+      checkAttendancePercentage();
+      loadTodayLectures();
+    }, [])
+  );
+
+  // Load today's lectures from timetable in AsyncStorage
+  const loadTodayLectures = async () => {
+    try {
+      const timetableData = await AsyncStorage.getItem("timetable");
+      console.log("timetableData", timetableData);
+      if (timetableData) {
+        const timetable = JSON.parse(timetableData);
+        const today = getToday();
+        const todayEntry = timetable.days?.find((d) => d.day === today);
+        if (
+          todayEntry &&
+          todayEntry.subjects &&
+          todayEntry.subjects.length > 0
+        ) {
+          setLectures(todayEntry.subjects);
+          setHasTimetable(true);
+        } else {
+          setLectures([]);
+          setHasTimetable(false);
+        }
+      } else {
+        setLectures([]);
+        setHasTimetable(false);
       }
-    };
+    } catch (error) {
+      setLectures([]);
+      setHasTimetable(false);
+      console.error("Error loading timetable:", error);
+    }
+  };
 
-    checkAttendancePercentage();
-  }, []);
-
+  // Logout and onboarding reset logic
   const deleteOnboardingData = async () => {
     try {
       await AsyncStorage.removeItem("onboardingDone");
@@ -88,86 +91,112 @@ const Home = () => {
     }
   };
 
-  const router = useRouter();
-  const auth = getAuth();
-
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      // Optional: Clear any stored user data
-      await AsyncStorage.removeItem("userToken");
-      console.log("User logged out successfully");
-      // console.log(user)
-    } catch (error) {
-      console.error("Logout error:", error);
-    }
-  };
-
   return (
-    <SafeAreaProvider>
-      <SafeAreaView style={styles.container}>
-        {showAttendanceFinder && (
-          <AttendancePercentageFinder
-            onClose={() => setShowAttendanceFinder(false)}
-          />
-        )}
-        <FlatList
-          ListHeaderComponent={
-            <>
-              {/* Welcome Box */}
-              <Pressable style={styles.topBox} onPress={deleteOnboardingData}>
-                <Text style={styles.topBoxText}>Welcome To</Text>
-                <Text style={styles.topBoxTextName}>R O L L C A L L</Text>
-              </Pressable>
-              {/* Today's Lectures Title */}
-              <View style={styles.bottomBoxTittle}>
-                <Text style={styles.bottomBoxTittleText}>Today's Lectures</Text>
-              </View>
-            </>
-          }
-          data={hasTimetable ? lectures : []}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <View style={styles.lectureCard}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.lectureName}>{item.name}</Text>
-                <Text style={styles.profName}>{item.professor}</Text>
-              </View>
-              <View style={styles.attendanceBtns}>
-                <TouchableOpacity style={styles.attendanceBtnRed}>
-                  <MaterialIcons name="close" size={32} color="#fff" />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.attendanceBtnGreen}>
-                  <MaterialIcons name="check" size={32} color="#fff" />
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
-          ListEmptyComponent={
-            !hasTimetable && (
-              <View style={styles.ttPlaceholderBox}>
-                <Text style={styles.ttPlaceholderText}>
-                  Please add your TT first ……
-                </Text>
-              </View>
-            )
-          }
-          contentContainerStyle={{ width: "95%", alignSelf: "center" }}
-          style={{ flex: 1 }}
+    <SafeAreaView style={styles.container}>
+      {showAttendanceFinder && (
+        <AttendancePercentageFinder
+          onClose={() => setShowAttendanceFinder(false)}
         />
-        {/* Logout Button */}
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutButtonText}>Logout</Text>
-        </TouchableOpacity>
-        {/* <View style={styles.scrolle}></View> */}
-      </SafeAreaView>
-    </SafeAreaProvider>
+      )}
+      <FlatList
+        ListHeaderComponent={
+          <>
+            {/* Welcome Box */}
+            <Pressable style={styles.topBox} onPress={deleteOnboardingData}>
+              <Text style={styles.topBoxText}>Welcome To</Text>
+              <Text style={styles.topBoxTextName}>R O L L C A L L</Text>
+            </Pressable>
+
+            {/* Creative Timetable Button - MOVED UP */}
+            <View style={styles.timetableButtonContainer}>
+              <TouchableOpacity
+                style={styles.timetableButton}
+                onPress={() => router.push("/timetable")}
+                activeOpacity={0.8}
+              >
+                <LinearGradient
+                  colors={["#4f6cff", "#3fa4ff"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.buttonGradient}
+                >
+                  <View style={styles.buttonIconContainer}>
+                    <Ionicons name="calendar" size={28} color="#fff" />
+                  </View>
+                  <View style={styles.buttonTextContainer}>
+                    <Text style={styles.buttonTitle}>Manage Timetable</Text>
+                    <Text style={styles.buttonSubtitle}>
+                      Add or edit your schedule
+                    </Text>
+                  </View>
+                  <View style={styles.buttonArrow}>
+                    <Ionicons name="chevron-forward" size={24} color="#fff" />
+                  </View>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+
+            {/* Today's Lectures Title - MOVED DOWN */}
+            <View style={styles.bottomBoxTittle}>
+              <Text style={styles.bottomBoxTittleText}>Today's Lectures</Text>
+            </View>
+          </>
+        }
+        data={hasTimetable ? lectures : []}
+        keyExtractor={(item, idx) => (item.id ? item.id : idx.toString())}
+        renderItem={({ item }) => (
+          <View style={styles.lectureCard}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.lectureName}>{item.name}</Text>
+              {item.professor && (
+                <Text style={styles.profName}>{item.professor}</Text>
+              )}
+              {item.startTime && item.endTime && (
+                <Text style={styles.profName}>
+                  {item.startTime} - {item.endTime}
+                </Text>
+              )}
+            </View>
+            <View style={styles.attendanceBtns}>
+              <TouchableOpacity style={styles.attendanceBtnRed}>
+                <MaterialIcons name="close" size={32} color="#fff" />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.attendanceBtnGreen}>
+                <MaterialIcons name="check" size={32} color="#fff" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+        ListEmptyComponent={
+          !hasTimetable && (
+            <View style={styles.ttPlaceholderBox}>
+              <Text style={styles.ttPlaceholderText}>
+                Please add your TT first ……
+              </Text>
+            </View>
+          )
+        }
+        contentContainerStyle={{ width: "95%", alignSelf: "center" }}
+        style={{ flex: 1 }}
+      />
+      {/* Logout Button */}
+      <TouchableOpacity
+        style={styles.logoutButton}
+        onPress={deleteOnboardingData}
+      >
+        <Text style={styles.logoutButtonText}>Logout</Text>
+      </TouchableOpacity>
+    </SafeAreaView>
   );
 };
 
 export default Home;
 
 const styles = StyleSheet.create({
+  container: {
+    backgroundColor: "#181818",
+    flex: 1,
+  },
   logoutButton: {
     backgroundColor: "#FF0000",
     padding: 15,
@@ -175,35 +204,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 20,
     marginHorizontal: 20,
-    marginBottom: 100, //ye chnage karne pe niche ka margin change higa
-  },
-  scrolle: {
-    // paddingBottom: 10,
-    // flex: 1,
-    backgroundColor: "#181818",
-    // paddingTop: 5,
-    // paddingHorizontal: 8,
+    marginBottom: 100,
   },
   logoutButtonText: {
     color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "bold",
-  },
-  container: {
-    backgroundColor: "#181818",
-    flex: 1,
-    // paddingBottom: 88, // Add padding to bottom
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#222",
-    marginTop: 10,
-    marginBottom: 10,
-    padding: 10,
-    borderRadius: 10,
-    width: "90%",
-    alignSelf: "center",
   },
   headerText: {
     color: "#fff",
@@ -299,6 +305,70 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 4,
   },
+  // New styles for the redesigned timetable button
+  timetableButtonContainer: {
+    marginTop: 20,
+    marginHorizontal: 16,
+    marginBottom: 30,
+  },
+  timetableButton: {
+    borderRadius: 16,
+    elevation: 4,
+    shadowColor: "#3fa4ff",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+  },
+  buttonGradient: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+  },
+  buttonIconContainer: {
+    backgroundColor: "rgba(255,255,255,0.2)",
+    borderRadius: 12,
+    width: 50,
+    height: 50,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  buttonTextContainer: {
+    flex: 1,
+    marginLeft: 16,
+  },
+  buttonTitle: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  buttonSubtitle: {
+    color: "rgba(255,255,255,0.8)",
+    fontSize: 14,
+    marginTop: 2,
+  },
+  buttonArrow: {
+    backgroundColor: "rgba(255,255,255,0.15)",
+    borderRadius: 50,
+    width: 32,
+    height: 32,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  // Existing legacy styles
+  scrolle: {},
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#222",
+    marginTop: 10,
+    marginBottom: 10,
+    padding: 10,
+    borderRadius: 10,
+    width: "90%",
+    alignSelf: "center",
+  },
   addTTBtn: {
     backgroundColor: "#3fa4ff",
     borderRadius: 10,
@@ -333,19 +403,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   attendanceContainer: {
-    // display: 'absolute',
     position: "absolute",
     flex: 1,
     backgroundColor: "transparent",
-    // borderRadius: 10,
     padding: 16,
-    // width: '100%',
     alignSelf: "center",
     justifyContent: "center",
     alignItems: "center",
-    // height: '100%',
-    // marginBottom: 12,
-    // marginTop: 6,
     zIndex: 9999,
   },
 });

@@ -5,6 +5,8 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  Animated,
+  ActivityIndicator,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -23,6 +25,9 @@ export default function TopicNotes() {
   const richText = useRef();
   const [note, setNote] = useState("");
   const [topicName, setTopicName] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [savedFeedback, setSavedFeedback] = useState(false);
+  const saveOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     loadNote();
@@ -53,6 +58,7 @@ export default function TopicNotes() {
   const saveNote = async (text) => {
     if (text === null || text === undefined) text = "";
     setNote(text);
+    setIsSaving(true);
 
     try {
       const data = await AsyncStorage.getItem("subjects");
@@ -74,12 +80,34 @@ export default function TopicNotes() {
               new Date().toISOString();
 
             await AsyncStorage.setItem("subjects", JSON.stringify(subjects));
+
+            // Show saved animation
+            showSavedFeedback();
           }
         }
       }
     } catch (error) {
       console.error("Error saving note:", error);
+    } finally {
+      setIsSaving(false);
     }
+  };
+
+  const showSavedFeedback = () => {
+    setSavedFeedback(true);
+    Animated.sequence([
+      Animated.timing(saveOpacity, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.delay(1000),
+      Animated.timing(saveOpacity, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+    ]).start(() => setSavedFeedback(false));
   };
 
   return (
@@ -92,6 +120,19 @@ export default function TopicNotes() {
           <Ionicons name="arrow-back" size={26} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.header}>{topicName}</Text>
+
+        <View style={styles.saveIndicator}>
+          {isSaving ? (
+            <ActivityIndicator size="small" color="#3fa4ff" />
+          ) : (
+            <Animated.View style={{ opacity: saveOpacity }}>
+              <View style={styles.savedBadge}>
+                <Ionicons name="checkmark-circle" size={16} color="#fff" />
+                <Text style={styles.savedText}>Saved</Text>
+              </View>
+            </Animated.View>
+          )}
+        </View>
       </View>
 
       <ScrollView style={{ flex: 1 }}>
@@ -141,12 +182,31 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 8,
     marginLeft: 8,
+    paddingHorizontal: 8,
   },
   header: {
     color: "#fff",
     fontSize: 22,
     fontWeight: "bold",
     flex: 1,
+  },
+  saveIndicator: {
+    width: 70,
+    alignItems: "flex-end",
+  },
+  savedBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#43a047",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  savedText: {
+    color: "#fff",
+    fontSize: 12,
+    marginLeft: 3,
+    fontWeight: "600",
   },
   richEditor: {
     minHeight: 300,

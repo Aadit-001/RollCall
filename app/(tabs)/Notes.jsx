@@ -9,20 +9,56 @@ import {
   TextInput,
   Alert,
   Platform,
+  Image,
+  Animated,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons, FontAwesome5 } from "@expo/vector-icons";
 import { useRouter, useFocusEffect } from "expo-router";
 import uuid from "react-native-uuid";
 import { LinearGradient } from "expo-linear-gradient";
 
 const STORAGE_KEY = "subjects";
+const SUBJECT_ICONS = {
+  default: "book",
+  math: "calculator",
+  science: "flask",
+  history: "scroll",
+  language: "language",
+  art: "palette",
+  music: "music",
+  computer: "laptop-code",
+};
 
 const Notes = () => {
   const router = useRouter();
   const [subjects, setSubjects] = useState([]);
+  const [filteredSubjects, setFilteredSubjects] = useState([]);
+  const [searchText, setSearchText] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
   const [newSubject, setNewSubject] = useState("");
+  const [fadeAnim] = useState(new Animated.Value(0));
+
+  // Animated entry effect
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 800,
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
+  // Filter subjects when search text changes
+  useEffect(() => {
+    if (searchText.trim() === "") {
+      setFilteredSubjects(subjects);
+    } else {
+      const filtered = subjects.filter((subject) =>
+        subject.name.toLowerCase().includes(searchText.toLowerCase())
+      );
+      setFilteredSubjects(filtered);
+    }
+  }, [searchText, subjects]);
 
   // This will reload subjects data when screen comes into focus
   useFocusEffect(
@@ -40,14 +76,18 @@ const Notes = () => {
   const loadSubjects = async () => {
     try {
       const data = await AsyncStorage.getItem(STORAGE_KEY);
-      console.log("Loaded subjects:", data);
       if (data) {
-        setSubjects(JSON.parse(data));
+        const loadedSubjects = JSON.parse(data);
+        setSubjects(loadedSubjects);
+        setFilteredSubjects(loadedSubjects);
       } else {
         setSubjects([]);
+        setFilteredSubjects([]);
       }
     } catch (error) {
       console.error("Error loading subjects:", error);
+      setSubjects([]);
+      setFilteredSubjects([]);
     }
   };
 
@@ -58,15 +98,49 @@ const Notes = () => {
         id: uuid.v4(),
         name: newSubject.trim(),
         topics: [],
+        color: getRandomGradient(),
+        icon: getSubjectIcon(newSubject.trim().toLowerCase()),
       };
       const updatedSubjects = [...subjects, newSubjectObj];
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedSubjects));
       setSubjects(updatedSubjects);
+      setFilteredSubjects(updatedSubjects);
       setNewSubject("");
+      setSearchText(""); // Reset search after adding
       setModalVisible(false);
     } catch (error) {
       console.error("Error adding subject:", error);
     }
+  };
+
+  const getRandomGradient = () => {
+    const gradients = [
+      ["#3a7bd5", "#3a6073"],
+      ["#ff5f6d", "#ffc371"],
+      ["#11998e", "#38ef7d"],
+      ["#fc5c7d", "#6a82fb"],
+      ["#c94b4b", "#4b134f"],
+      ["#23074d", "#cc5333"],
+    ];
+    return gradients[Math.floor(Math.random() * gradients.length)];
+  };
+
+  const getSubjectIcon = (name) => {
+    if (name.includes("math")) return "calculator";
+    if (
+      name.includes("science") ||
+      name.includes("chemistry") ||
+      name.includes("physics")
+    )
+      return "flask";
+    if (name.includes("history")) return "scroll";
+    if (name.includes("language") || name.includes("english"))
+      return "language";
+    if (name.includes("art")) return "palette";
+    if (name.includes("music")) return "music";
+    if (name.includes("computer") || name.includes("programming"))
+      return "laptop-code";
+    return "book";
   };
 
   const handleDeleteSubject = async (id) => {
@@ -90,6 +164,8 @@ const Notes = () => {
                 JSON.stringify(filteredSubjects)
               );
               setSubjects(filteredSubjects);
+              setFilteredSubjects(filteredSubjects);
+              setSearchText(""); // Reset search after deleting
             },
             style: "destructive",
           },
@@ -100,55 +176,149 @@ const Notes = () => {
     }
   };
 
-  const renderSubjectCard = ({ item }) => (
-    <View style={styles.cardContainer}>
-      <TouchableOpacity
-        style={styles.card}
-        onPress={() => router.push(`/note/${item.id}`)}
-        activeOpacity={0.8}
+  const renderSubjectCard = ({ item, index }) => {
+    const colorPair = item.color || ["#3a7bd5", "#3a6073"];
+    const icon = item.icon || "book";
+    const delay = index * 100;
+
+    return (
+      <Animated.View
+        style={[
+          styles.cardContainer,
+          {
+            opacity: fadeAnim,
+            transform: [
+              {
+                translateY: fadeAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [50, 0],
+                }),
+              },
+            ],
+          },
+        ]}
       >
-        <LinearGradient
-          colors={["#2a2a2a", "#232323"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.gradient}
+        <TouchableOpacity
+          style={styles.card}
+          onPress={() => router.push(`/note/${item.id}`)}
+          activeOpacity={0.9}
         >
-          <View style={styles.cardContent}>
-            <Text style={styles.cardText}>{item.name}</Text>
-            <Text style={styles.topicsCount}>
-              {item.topics?.length || 0}{" "}
-              {item.topics?.length === 1 ? "topic" : "topics"}
-            </Text>
-          </View>
-        </LinearGradient>
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={styles.deleteIcon}
-        onPress={() => handleDeleteSubject(item.id)}
-      >
-        <Ionicons name="trash-outline" size={22} color="#ff4d4d" />
-      </TouchableOpacity>
-    </View>
-  );
+          <LinearGradient
+            colors={colorPair}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.gradient}
+          >
+            <View style={styles.iconCircle}>
+              <FontAwesome5 name={icon} size={20} color="#fff" />
+            </View>
+            <View style={styles.cardContent}>
+              <Text style={styles.cardText}>{item.name}</Text>
+              <View style={styles.topicsContainer}>
+                <Text style={styles.topicsCount}>
+                  {item.topics?.length || 0}{" "}
+                  {item.topics?.length === 1 ? "topic" : "topics"}
+                </Text>
+              </View>
+            </View>
+          </LinearGradient>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.deleteIcon}
+          onPress={() => handleDeleteSubject(item.id)}
+        >
+          <Ionicons name="trash-outline" size={20} color="#ff4d4d" />
+        </TouchableOpacity>
+      </Animated.View>
+    );
+  };
+
+  const clearSearch = () => {
+    setSearchText("");
+  };
 
   return (
     <View style={styles.container}>
-      <View style={styles.headerContainer}>
-        <Text style={styles.headerText}>Subjects</Text>
-      </View>
+      <LinearGradient
+        colors={["#181818", "#121212"]}
+        style={styles.headerGradient}
+      >
+        <View style={styles.headerContainer}>
+          <View style={styles.titleContainer}>
+            <Text style={styles.headerText}>My Subjects</Text>
+            <Text style={styles.subHeaderText}>
+              {filteredSubjects.length}{" "}
+              {filteredSubjects.length === 1 ? "subject" : "subjects"}
+            </Text>
+          </View>
+
+          <View style={styles.searchContainer}>
+            <Ionicons
+              name="search"
+              size={20}
+              color="#aaa"
+              style={styles.searchIcon}
+            />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search subjects..."
+              placeholderTextColor="#888"
+              value={searchText}
+              onChangeText={setSearchText}
+            />
+            {searchText.length > 0 && (
+              <TouchableOpacity onPress={clearSearch}>
+                <Ionicons name="close-circle" size={20} color="#888" />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      </LinearGradient>
 
       <FlatList
-        data={subjects}
+        data={filteredSubjects}
         keyExtractor={(item) => item.id}
         numColumns={2}
         contentContainerStyle={styles.grid}
         renderItem={renderSubjectCard}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <MaterialIcons name="menu-book" size={70} color="#555" />
-            <Text style={styles.emptyText}>
-              No subjects yet. Add your first subject!
-            </Text>
+            {searchText.length > 0 ? (
+              <>
+                <Ionicons name="search" size={80} color="#555" />
+                <Text style={styles.emptyTitle}>No matching subjects</Text>
+                <Text style={styles.emptyText}>
+                  Try searching with a different term
+                </Text>
+                <TouchableOpacity
+                  style={styles.emptyButton}
+                  onPress={clearSearch}
+                >
+                  <Text style={styles.emptyButtonText}>Clear Search</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <Image
+                  source={{
+                    uri: "https://img.icons8.com/clouds/400/000000/book.png",
+                  }}
+                  style={styles.emptyImage}
+                />
+                <Text style={styles.emptyTitle}>No subjects yet</Text>
+                <Text style={styles.emptyText}>
+                  Start adding your subjects to create notes!
+                </Text>
+                <TouchableOpacity
+                  style={styles.emptyButton}
+                  onPress={() => setModalVisible(true)}
+                >
+                  <Text style={styles.emptyButtonText}>
+                    Add Your First Subject
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
           </View>
         }
         showsVerticalScrollIndicator={false}
@@ -159,34 +329,65 @@ const Notes = () => {
         style={styles.fab}
         onPress={() => setModalVisible(true)}
       >
-        <Ionicons name="add" size={28} color="#fff" />
+        <LinearGradient
+          colors={["#3fa4ff", "#2389da"]}
+          style={styles.fabGradient}
+        >
+          <Ionicons name="add" size={28} color="#fff" />
+        </LinearGradient>
       </TouchableOpacity>
 
       {/* Add Subject Modal */}
       <Modal visible={modalVisible} animationType="slide" transparent>
         <View style={styles.modalBg}>
-          <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>Add Subject</Text>
-            <TextInput
-              value={newSubject}
-              onChangeText={setNewSubject}
-              placeholder="Subject Name"
-              style={styles.input}
-              placeholderTextColor="#888"
-              autoFocus
-            />
-            <View style={styles.modalBtns}>
-              <TouchableOpacity
-                onPress={() => setModalVisible(false)}
-                style={styles.cancelBtn}
-              >
-                <Text style={{ color: "#fff" }}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={addSubject} style={styles.addBtn}>
-                <Text style={{ color: "#fff", fontWeight: "bold" }}>Add</Text>
+          <Animated.View
+            style={[
+              styles.modalBox,
+              {
+                transform: [
+                  {
+                    scale: fadeAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.9, 1],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Add New Subject</Text>
+              <TouchableOpacity onPress={() => setModalVisible(false)}>
+                <Ionicons name="close-circle" size={28} color="#555" />
               </TouchableOpacity>
             </View>
-          </View>
+            <View style={styles.inputContainer}>
+              <Ionicons
+                name="book-outline"
+                size={22}
+                color="#3fa4ff"
+                style={styles.inputIcon}
+              />
+              <TextInput
+                value={newSubject}
+                onChangeText={setNewSubject}
+                placeholder="Subject Name"
+                style={styles.input}
+                placeholderTextColor="#888"
+                autoFocus
+              />
+            </View>
+            <TouchableOpacity onPress={addSubject} style={styles.addBtn}>
+              <LinearGradient
+                colors={["#3fa4ff", "#2389da"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.addBtnGradient}
+              >
+                <Text style={styles.addBtnText}>Add Subject</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </Animated.View>
         </View>
       </Modal>
     </View>
@@ -198,64 +399,97 @@ export default Notes;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#181818",
-    paddingTop: 18,
+    backgroundColor: "#121212",
+  },
+  headerGradient: {
+    paddingTop: 50,
+    paddingBottom: 20,
+    paddingHorizontal: 20,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
   },
   headerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: "column",
     justifyContent: "space-between",
-    paddingHorizontal: 20,
-    marginBottom: 16,
+  },
+  titleContainer: {
+    marginBottom: 15,
   },
   headerText: {
     color: "#fff",
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: "bold",
   },
-  addButton: {
+  subHeaderText: {
+    color: "#aaa",
+    fontSize: 16,
+    marginTop: 4,
+  },
+  searchContainer: {
     flexDirection: "row",
     alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.1)",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginTop: 4,
   },
-  addButtonText: {
-    color: "#3fa4ff",
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    color: "#fff",
     fontSize: 16,
-    marginRight: 5,
+    height: 40,
+    padding: 0,
   },
   grid: {
     alignItems: "center",
     justifyContent: "center",
-    paddingBottom: 90,
-    paddingHorizontal: 5,
+    paddingVertical: 20,
+    paddingHorizontal: 10,
+    paddingBottom: 100,
   },
   cardContainer: {
     position: "relative",
-    margin: 8,
+    margin: 10,
     ...Platform.select({
       ios: {
-        shadowColor: "#3fa4ff",
-        shadowOffset: { width: 0, height: 2 },
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.2,
-        shadowRadius: 4,
+        shadowRadius: 8,
       },
       android: {
-        elevation: 4,
+        elevation: 6,
       },
     }),
   },
   card: {
-    width: 180,
-    height: 140,
-    borderRadius: 16,
+    width: 170,
+    height: 200,
+    borderRadius: 20,
     overflow: "hidden",
   },
   gradient: {
     flex: 1,
-    padding: 15,
+    padding: 16,
+    justifyContent: "space-between",
+  },
+  iconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "#3fa4ff",
-    borderRadius: 16,
+    marginBottom: 8,
   },
   cardContent: {
     flex: 1,
@@ -265,115 +499,161 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 22,
     fontWeight: "bold",
-    textAlign: "center",
+    marginVertical: 10,
+  },
+  topicsContainer: {
+    backgroundColor: "rgba(0,0,0,0.2)",
+    borderRadius: 12,
+    padding: 8,
+    alignSelf: "flex-start",
+    marginTop: 10,
   },
   topicsCount: {
-    color: "#aaa",
+    color: "#fff",
     fontSize: 14,
-    textAlign: "center",
-    marginTop: 5,
   },
   deleteIcon: {
     position: "absolute",
     top: 10,
     right: 10,
-    backgroundColor: "rgba(35, 35, 35, 0.8)",
-    borderRadius: 12,
-    padding: 5,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    borderRadius: 16,
+    width: 32,
+    height: 32,
+    alignItems: "center",
+    justifyContent: "center",
     zIndex: 10,
-    borderWidth: 1,
-    borderColor: "rgba(255, 77, 77, 0.5)",
   },
   fab: {
     position: "absolute",
     right: 24,
-    bottom: 80,
-    backgroundColor: "#3fa4ff",
-    width: 60,
-    height: 60,
+    bottom: 100, // Increased to avoid tab bar overlap
+    overflow: "hidden",
     borderRadius: 30,
-    alignItems: "center",
-    justifyContent: "center",
     ...Platform.select({
       ios: {
-        shadowColor: "#000",
+        shadowColor: "#3fa4ff",
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
-        shadowRadius: 4,
+        shadowRadius: 8,
       },
       android: {
         elevation: 8,
       },
     }),
   },
+  fabGradient: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   emptyContainer: {
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 80,
+    marginTop: 60,
+    paddingHorizontal: 20,
+  },
+  emptyImage: {
+    width: 180,
+    height: 180,
+    marginBottom: 20,
+  },
+  emptyTitle: {
+    color: "#fff",
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 10,
   },
   emptyText: {
     color: "#888",
     textAlign: "center",
-    marginTop: 16,
+    marginBottom: 30,
     fontSize: 16,
-    maxWidth: 250,
+    lineHeight: 24,
+  },
+  emptyButton: {
+    backgroundColor: "#3fa4ff",
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+  },
+  emptyButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
   },
   modalBg: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.6)",
+    backgroundColor: "rgba(0,0,0,0.7)",
     justifyContent: "center",
     alignItems: "center",
   },
   modalBox: {
     backgroundColor: "#232323",
-    borderRadius: 16,
+    borderRadius: 24,
     padding: 24,
-    width: 320,
+    width: "85%",
+    maxWidth: 360,
     borderWidth: 1,
-    borderColor: "#3fa4ff",
+    borderColor: "rgba(255,255,255,0.1)",
     ...Platform.select({
       ios: {
         shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
+        shadowOffset: { width: 0, height: 10 },
         shadowOpacity: 0.3,
-        shadowRadius: 6,
+        shadowRadius: 12,
       },
       android: {
-        elevation: 10,
+        elevation: 24,
       },
     }),
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
   },
   modalTitle: {
     color: "#fff",
     fontSize: 22,
     fontWeight: "bold",
-    marginBottom: 16,
   },
-  input: {
-    backgroundColor: "#181818",
-    color: "#fff",
-    borderRadius: 10,
-    padding: 14,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: "#3fa4ff",
-    marginBottom: 20,
-  },
-  modalBtns: {
+  inputContainer: {
     flexDirection: "row",
-    justifyContent: "flex-end",
+    alignItems: "center",
+    backgroundColor: "#181818",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#333",
+    marginBottom: 24,
+    paddingHorizontal: 16,
+    height: 56,
   },
-  cancelBtn: {
-    backgroundColor: "#555",
-    borderRadius: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 18,
+  inputIcon: {
     marginRight: 12,
   },
+  input: {
+    flex: 1,
+    color: "#fff",
+    fontSize: 16,
+    height: 56,
+  },
   addBtn: {
-    backgroundColor: "#3fa4ff",
-    borderRadius: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
+    borderRadius: 16,
+    overflow: "hidden",
+    height: 56,
+  },
+  addBtnGradient: {
+    alignItems: "center",
+    justifyContent: "center",
+    height: "100%",
+  },
+  addBtnText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 18,
   },
 });

@@ -36,17 +36,36 @@ export default function TopicNotes() {
   const loadNote = async () => {
     try {
       const data = await AsyncStorage.getItem("subjects");
-      console.log("Loaded subjects:", data);
+      console.log("Loaded subjects (type):", typeof data);
+      console.log("Loaded subjects (value):", data);
+      
       if (data) {
         const subjects = JSON.parse(data);
+        console.log("Subjects (type):", typeof subjects);
+        console.log("Subjects (value):", subjects);
+        
         const subject = subjects.find((s) => s.id.toString() === subjectId);
+        console.log("Subject (type):", typeof subject);
+        console.log("Subject (value):", subject);
+        
         if (subject) {
           const topic = (subject.topics || []).find(
             (t) => t.id.toString() === topicId
           );
+          console.log("Topic (type):", typeof topic);
+          console.log("Topic (value):", topic);
+          
           if (topic) {
-            setNote(topic.notes || "");
-            setTopicName(topic.name || "");
+            // Ensure notes is a string
+            const noteContent = topic.notes && typeof topic.notes === 'string' 
+              ? topic.notes 
+              : (topic.notes && topic.notes.toString ? topic.notes.toString() : '');
+            
+            console.log("Note Content (type):", typeof noteContent);
+            console.log("Note Content (value):", noteContent);
+            
+            setNote(noteContent);
+            setTopicName(topic.name || '');
           }
         }
       }
@@ -56,8 +75,18 @@ export default function TopicNotes() {
   };
 
   const saveNote = async (text) => {
-    if (text === null || text === undefined) text = "";
-    setNote(text);
+    console.log('saveNote input type:', typeof text);
+    console.log('saveNote input value:', text);
+
+    // Normalize text to a string
+    const normalizedText = text === null || text === undefined 
+      ? '' 
+      : (Array.isArray(text) ? text.join('') : text.toString());
+
+    console.log('Normalized text type:', typeof normalizedText);
+    console.log('Normalized text value:', normalizedText);
+
+    setNote(normalizedText);
     setIsSaving(true);
 
     try {
@@ -73,7 +102,7 @@ export default function TopicNotes() {
           );
           if (topicIdx !== -1) {
             // Update the note content
-            subjects[subjectIdx].topics[topicIdx].notes = text;
+            subjects[subjectIdx].topics[topicIdx].notes = normalizedText;
 
             // Update the modifiedAt timestamp with current date/time
             subjects[subjectIdx].topics[topicIdx].modifiedAt =
@@ -138,8 +167,12 @@ export default function TopicNotes() {
       <ScrollView style={{ flex: 1 }}>
         <RichEditor
           ref={richText}
-          initialContentHTML={note || ""}
-          onChange={saveNote}
+          initialContentHTML={typeof note === 'string' ? note : (Array.isArray(note) ? note.join('') : '')}
+          onChange={(text) => {
+            console.log('RichEditor onChange type:', typeof text);
+            console.log('RichEditor onChange value:', text);
+            saveNote(text);
+          }}
           style={styles.richEditor}
           placeholder="Write your notes here..."
           editorStyle={{ backgroundColor: "#232323", color: "#fff" }}
@@ -149,24 +182,24 @@ export default function TopicNotes() {
       </ScrollView>
 
       <RichToolbar
-        editor={richText}
-        actions={[
-          actions.setBold,
-          actions.setItalic,
-          actions.setUnderline,
-          actions.insertBulletsList,
-          actions.insertOrderedList,
-          actions.insertLink,
-          actions.setStrikethrough,
-          actions.setSuperscript,
-          actions.setSubscript,
-          actions.removeFormat,
-        ]}
-        style={styles.richToolbar}
-        iconTint="#fff"
-        selectedIconTint="#3fa4ff"
-        selectedButtonStyle={{ backgroundColor: "#232323" }}
-      />
+  editor={richText}
+  actions={[
+    actions.setBold,
+    actions.setItalic,
+    actions.setUnderline,
+    actions.insertBulletsList,
+    actions.insertOrderedList,
+    actions.insertLink,
+    actions.setStrikethrough,
+    actions.setSuperscript,
+    actions.setSubscript,
+    actions.removeFormat,
+  ].filter(Boolean)}  // Add this .filter(Boolean)
+  style={styles.richToolbar}
+  iconTint="#fff"
+  selectedIconTint="#3fa4ff"
+  selectedButtonStyle={{ backgroundColor: "#232323" }}
+/>
     </View>
   );
 }

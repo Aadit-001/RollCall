@@ -11,8 +11,6 @@ import Welcome from "../onboarding/Welcome";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import Signin from "../auth/Signin";
 import Register from "../auth/Register";
-import SideBar from "@/components/SideBar";
-import { TouchableOpacity } from "react-native";
 
 
 export default function TabLayout() {
@@ -34,11 +32,7 @@ export default function TabLayout() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [initializing, setInitializing] = useState(true);
   const [name, setName] = useState('');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
-  };
 
   useEffect(() => {
     const checkOnboardingStatus = async () => {
@@ -81,9 +75,6 @@ export default function TabLayout() {
     );
   }
 
-  if(isSidebarOpen){
-    return <SideBar />
-  }
 
   return (
     <SafeAreaProvider>
@@ -91,8 +82,8 @@ export default function TabLayout() {
         isLoggedIn ? (
           <Tabs
       screenOptions={{
-        // headerShown: true,
-        tabBarActiveTintColor: "#40E0D0", //ye hai jo active hai uske liye color
+        // headerShown: false,
+        tabBarActiveTintColor: "#3fa4ff", //ye hai jo active hai uske liye color
         tabBarInactiveTintColor: "#9BA1A6",
         tabBarStyle: {
           backgroundColor: "#000",
@@ -103,14 +94,20 @@ export default function TabLayout() {
           paddingBottom: 10,
           paddingLeft: 10,
           paddingRight: 10,
-          borderTopWidth: 0,
-          borderWidth: 0,
+          borderTopWidth: 0.1,
+          borderWidth: 0.1,
+          borderColor: "#40E0D0",
           position: "absolute",
           bottom: 10,
           marginLeft: "5%",
           // right: "5%",
           // marginHorizontal: 20,
           zIndex: 1000,
+          elevation: 12,
+          shadowColor: "#121212",
+          shadowOffset: { width: 6, height: 6 },
+          shadowOpacity: 0.2,
+          shadowRadius: 12,
         },
         // headerStatusBarHeight: 0,
       }}
@@ -118,21 +115,21 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          headerShown: true,
-          headerTitle: () => (
-            <View style={{ flexDirection: "row", alignItems: "baseline" }}>
-              <Text style={Styles.headerTitle}>Hi, </Text>
-              <Text style={Styles.title}>{name}</Text>
-            </View>
-          ),
-          headerStyle: {
-            backgroundColor: "black",
-          },
-          headerLeft: () => (
-            <View style={{ marginLeft: 10, marginRight: 10 }}>
-              <Ionicons name="menu" size={32} color="white" onPress={toggleSidebar}/>
-            </View>
-          ),
+          headerShown: false,
+          // headerTitle: () => (
+          //   <View style={{ flexDirection: "row", alignItems: "baseline" }}>
+          //     <Text style={Styles.headerTitle}>Hi, </Text>
+          //     <Text style={Styles.title}>{name}</Text>
+          //   </View>
+          // ),
+          // headerStyle: {
+          //   backgroundColor: "black",
+          // },
+          // headerLeft: () => (
+          //   <View style={{ marginLeft: 10, marginRight: 10 }}>
+          //     <Ionicons name="menu" size={32} color="white"/>
+          //   </View>
+          // ),
           tabBarLabel: "Home",
           tabBarIcon: ({ color, size, focused }) =>
             focused ? (
@@ -154,7 +151,7 @@ export default function TabLayout() {
         name="Attendance"
         options={{
           tabBarLabel: "Attendance",
-          headerShown: true,
+          headerShown: false,
           headerTitle: () => (
             <View style={{ flexDirection: "row", alignItems: "center" }}>
               <Text style={Styles.title}>Attendance</Text>
@@ -165,7 +162,7 @@ export default function TabLayout() {
           },
           headerLeft: () => (
             <View style={{ marginLeft: 10, marginRight: 10 }}>
-              <Ionicons name="menu" size={32} color="white" onPress={toggleSidebar}/>
+              <Ionicons name="menu" size={32} color="white"/>
             </View>
           ),
           tabBarIcon: ({ color, size, focused }) =>
@@ -188,7 +185,7 @@ export default function TabLayout() {
         name="Notes"
         options={{
           tabBarLabel: "Notes",
-          headerShown: true,
+          headerShown: false,
           headerTitle: () => (
             <View style={{ flexDirection: "row", alignItems: "center" }}>
               <Text style={Styles.title}>Notes</Text>
@@ -199,7 +196,7 @@ export default function TabLayout() {
           },
           headerLeft: () => (
             <View style={{ marginLeft: 10, marginRight: 10 }}>
-              <Ionicons name="menu" size={32} color="white" onPress={toggleSidebar}/>
+              <Ionicons name="menu" size={32} color="white"/>
             </View>
           ),
           tabBarIcon: ({ color, size, focused }) =>

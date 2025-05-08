@@ -15,6 +15,7 @@ import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import uuid from "react-native-uuid";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
+import { StatusBar } from "expo-status-bar";
 
 const WEEK_DAYS = [
   "Monday",
@@ -46,6 +47,8 @@ export default function Timetable() {
     professor: "",
     startTime: "",
     endTime: "",
+    totalClasses: 0,
+    attendedClasses: 0,
   });
 
   useEffect(() => {
@@ -61,13 +64,86 @@ export default function Timetable() {
     }
   };
 
+  const getRandomGradient = () => {
+    const gradients = [
+      ["#3a7bd5", "#3a6073"],
+      ["#ff5f6d", "#ffc371"],
+      ["#11998e", "#38ef7d"],
+      ["#fc5c7d", "#6a82fb"],
+      ["#c94b4b", "#4b134f"],
+      ["#23074d", "#cc5333"],
+    ];
+    return gradients[Math.floor(Math.random() * gradients.length)];
+  };
+
+  const getSubjectIcon = (name) => {
+    if (name.includes("math")) return "calculator";
+    if (
+      name.includes("science") ||
+      name.includes("chemistry") ||
+      name.includes("physics")
+    )
+      return "flask";
+    if (name.includes("history")) return "scroll";
+    if (name.includes("language") || name.includes("english"))
+      return "language";
+    if (name.includes("art")) return "palette";
+    if (name.includes("music")) return "music";
+    if (name.includes("computer") || name.includes("programming"))
+      return "laptop-code";
+    return "book";
+  };
+
   const saveTimetable = async (updatedTimetable) => {
     setTimetable(updatedTimetable);
     await AsyncStorage.setItem(
       "timetable",
       JSON.stringify({ days: updatedTimetable })
     );
-  };
+
+    // Load existing subjects from AsyncStorage
+    let existingSubjectObjects = [];
+    const existingSubjectsString = await AsyncStorage.getItem("subjects");
+    if (existingSubjectsString) {
+      try {
+        existingSubjectObjects = JSON.parse(existingSubjectsString);
+      } catch (e) {
+        console.error("Failed to parse existing subjects:", e);
+        existingSubjectObjects = []; // Fallback to empty array on parse error
+      }
+    }
+
+    const existingSubjectNames = new Set(existingSubjectObjects.map(s => s.name));
+    const newSubjectObjectsFromThisUpdate = [];
+    const processedNamesInThisUpdate = new Set(); // To handle duplicates within the same timetable update
+
+    updatedTimetable.forEach(day => {
+      day.subjects.forEach(subject => {
+        if (subject.name) {
+          const subjectName = subject.name.trim();
+          // Add to subjects array only if it's a new name (not in existingSubjectNames 
+          // AND not already processed in this current update batch)
+          if (subjectName && !existingSubjectNames.has(subjectName) && !processedNamesInThisUpdate.has(subjectName)) {
+            const newSubjectObj = {
+              id: uuid.v4(), 
+              name: subjectName,
+              topics: [], 
+              color: getRandomGradient(),
+              icon: getSubjectIcon(subjectName.toLowerCase()),
+            };
+            newSubjectObjectsFromThisUpdate.push(newSubjectObj);
+            processedNamesInThisUpdate.add(subjectName); // Mark as processed for this update cycle
+          }
+        }
+      });
+    });
+
+    // Combine existing subjects with any truly new subjects from this update
+    const finalSubjectObjects = [...existingSubjectObjects, ...newSubjectObjectsFromThisUpdate];
+
+    await AsyncStorage.setItem("subjects", JSON.stringify(finalSubjectObjects));
+    console.log("Final subject objects saved to AsyncStorage:", finalSubjectObjects);
+  };    
 
   const handleAddSubject = (dayIdx) => {
     if (
@@ -89,8 +165,12 @@ export default function Timetable() {
       professor: "",
       startTime: "",
       endTime: "",
+      totalClasses: 0,
+      attendedClasses: 0,
     });
   };
+  
+  
 
   const handleDeleteSubject = (dayIdx, subjectId) => {
     Alert.alert(
@@ -155,8 +235,9 @@ export default function Timetable() {
 
   return (
     <View style={styles.container}>
+      <StatusBar style="light" backgroundColor="#121212"/>
       <LinearGradient
-        colors={["#181818", "#121212"]}
+        colors={["#121212", "#121212"]}
         style={styles.gradientBackground}
       >
         <View style={styles.headerRow}>
@@ -320,16 +401,17 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    marginBottom: 16,
+    marginBottom: 2,
+    marginTop: 40,
     paddingVertical: 12,
-    backgroundColor: "black",
-    borderBottomLeftRadius: 12,
-    borderBottomRightRadius: 12,
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
+    // backgroundColor: "black",
+    // borderBottomLeftRadius: 12,
+    // borderBottomRightRadius: 12,
+    // elevation: 4,
+    // shadowColor: "#000",
+    // shadowOffset: { width: 0, height: 4 },
+    // shadowOpacity: 0.2,
+    // shadowRadius: 8,
   },
   backButton: {
     marginRight: 15,

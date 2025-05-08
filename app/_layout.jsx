@@ -7,7 +7,7 @@ import { View, ActivityIndicator } from "react-native";
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }} >
-      <Stack screenOptions={{ headerShown: false, statusBarBackgroundColor: "black" }}>
+      <Stack screenOptions={{ headerShown: false, statusBarBackgroundColor: "#121212" }}>
         {/* <Stack.Screen name="index" /> */}
         {/* <Stack.Screen name="onboarding" /> */}
         <Stack.Screen name="(tabs)" />

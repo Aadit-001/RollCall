@@ -55,6 +55,7 @@ function Register() {
       });
 
       await AsyncStorage.setItem('userName', name);
+      await AsyncStorage.setItem('userEmail', email);
       router.replace('./Signin');
     } catch (error) {
       let errorMessage = 'Registration failed';

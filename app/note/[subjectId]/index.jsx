@@ -285,8 +285,9 @@ export default function SubjectTopics() {
 
   return (
     <View style={styles.container}>
+      <StatusBar style="light" backgroundColor="#121212"/>
       <LinearGradient
-        colors={["#1a1a1a", "#121212"]}
+        colors={["#121212", "#121212"]}
         style={styles.backgroundGradient}
       >
         <View style={styles.headerContainer}>
@@ -360,7 +361,7 @@ export default function SubjectTopics() {
           activeOpacity={0.7}
         >
           <LinearGradient
-            colors={["#4361ee", "#3a0ca3"]}
+            colors={["#3fa4ff", "#3fa4ff"]}
             style={styles.fabGradient}
           >
             <Ionicons name="add" size={32} color="#fff" />
@@ -415,7 +416,7 @@ export default function SubjectTopics() {
                 disabled={!newTopic.trim()}
               >
                 <LinearGradient
-                  colors={["#4361ee", "#3a0ca3"]}
+                  colors={["#3fa4ff", "#3fa4ff"]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                   style={[
@@ -449,14 +450,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginBottom: 16,
     paddingBottom: 10,
-    backgroundColor: "black",
-    borderBottomLeftRadius: 12,
-    borderBottomRightRadius: 12,
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
+    marginTop: 50,
+    // backgroundColor: "black",
+    // borderBottomLeftRadius: 12,
+    // borderBottomRightRadius: 12,
+    // elevation: 4,
+    // shadowColor: "#000",
+    // shadowOffset: { width: 0, height: 4 },
+    // shadowOpacity: 0.2,
+    // shadowRadius: 8,
   },
   headerTextContainer: {
     flex: 1,

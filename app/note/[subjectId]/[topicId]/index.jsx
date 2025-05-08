@@ -16,6 +16,7 @@ import {
   actions,
 } from "react-native-pell-rich-editor";
 import { Ionicons } from "@expo/vector-icons";
+import { StatusBar } from "expo-status-bar";
 
 export default function TopicNotes() {
   const params = useLocalSearchParams();
@@ -141,10 +142,11 @@ export default function TopicNotes() {
 
   return (
     <View style={styles.container}>
+      <StatusBar style="light" backgroundColor="#121212"/>
       <View style={styles.headerRow}>
         <TouchableOpacity
           onPress={() => router.back()}
-          style={{ marginRight: 10 }}
+          style={styles.backButton}
         >
           <Ionicons name="arrow-back" size={26} color="#fff" />
         </TouchableOpacity>
@@ -207,7 +209,7 @@ export default function TopicNotes() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#181818",
+    backgroundColor: "#121212",
     paddingTop: 18,
   },
   headerRow: {
@@ -216,6 +218,16 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     marginLeft: 8,
     paddingHorizontal: 8,
+    marginTop: 36,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
   },
   header: {
     color: "#fff",

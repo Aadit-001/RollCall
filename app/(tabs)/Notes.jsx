@@ -17,6 +17,7 @@ import { Ionicons, MaterialIcons, FontAwesome5 } from "@expo/vector-icons";
 import { useRouter, useFocusEffect } from "expo-router";
 import uuid from "react-native-uuid";
 import { LinearGradient } from "expo-linear-gradient";
+import { StatusBar } from "expo-status-bar";
 
 const STORAGE_KEY = "subjects";
 const SUBJECT_ICONS = {
@@ -227,7 +228,7 @@ const Notes = () => {
           style={styles.deleteIcon}
           onPress={() => handleDeleteSubject(item.id)}
         >
-          <Ionicons name="trash-outline" size={20} color="#ff4d4d" />
+          <Ionicons name="trash-outline" size={14} color="orange" />
         </TouchableOpacity>
       </Animated.View>
     );
@@ -239,17 +240,20 @@ const Notes = () => {
 
   return (
     <View style={styles.container}>
+      <StatusBar style="light" backgroundColor="#121212"/>
       <LinearGradient
-        colors={["#181818", "#121212"]}
+        colors={["#121212", "#121212"]}
         style={styles.headerGradient}
       >
         <View style={styles.headerContainer}>
           <View style={styles.titleContainer}>
-            <Text style={styles.headerText}>My Subjects</Text>
-            <Text style={styles.subHeaderText}>
-              {filteredSubjects.length}{" "}
-              {filteredSubjects.length === 1 ? "subject" : "subjects"}
-            </Text>
+            <View style={styles.headerIconContainer}>
+              <Ionicons name="calendar-clear" size={28} color="white"/>
+              <Text style={styles.headerText}>My Notes</Text>
+            </View>
+            <TouchableOpacity onPress={() => router.push("/Notifications")}>
+                      <Ionicons name="notifications-outline" size={28} color="#fff" />
+                    </TouchableOpacity>
           </View>
 
           <View style={styles.searchContainer}>
@@ -273,6 +277,7 @@ const Notes = () => {
             )}
           </View>
         </View>
+        
       </LinearGradient>
 
       <FlatList
@@ -405,13 +410,13 @@ const styles = StyleSheet.create({
     paddingTop: 50,
     paddingBottom: 20,
     paddingHorizontal: 20,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
+
+    
+  },
+  headerIconContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
   },
   headerContainer: {
     flexDirection: "column",
@@ -419,6 +424,9 @@ const styles = StyleSheet.create({
   },
   titleContainer: {
     marginBottom: 15,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   headerText: {
     color: "#fff",
@@ -429,6 +437,7 @@ const styles = StyleSheet.create({
     color: "#aaa",
     fontSize: 16,
     marginTop: 4,
+    marginLeft: 40,
   },
   searchContainer: {
     flexDirection: "row",
@@ -450,15 +459,15 @@ const styles = StyleSheet.create({
     padding: 0,
   },
   grid: {
-    alignItems: "center",
+    alignItems: "left",
     justifyContent: "center",
     paddingVertical: 20,
-    paddingHorizontal: 10,
+    paddingHorizontal: 4,
     paddingBottom: 100,
   },
   cardContainer: {
     position: "relative",
-    margin: 10,
+    margin: 8,
     ...Platform.select({
       ios: {
         shadowColor: "#000",
@@ -472,9 +481,9 @@ const styles = StyleSheet.create({
     }),
   },
   card: {
-    width: 170,
-    height: 200,
-    borderRadius: 20,
+    width: 160,
+    height: 160,
+    borderRadius: 12,
     overflow: "hidden",
   },
   gradient: {
@@ -489,7 +498,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.2)",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 8,
+    // marginBottom: 8,
   },
   cardContent: {
     flex: 1,
@@ -514,12 +523,12 @@ const styles = StyleSheet.create({
   },
   deleteIcon: {
     position: "absolute",
-    top: 10,
-    right: 10,
+    top: 4,
+    right: 4,
     backgroundColor: "rgba(0,0,0,0.5)",
     borderRadius: 16,
-    width: 32,
-    height: 32,
+    width: 28,
+    height: 28,
     alignItems: "center",
     justifyContent: "center",
     zIndex: 10,
@@ -552,7 +561,7 @@ const styles = StyleSheet.create({
   emptyContainer: {
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 60,
+    marginTop: 10,
     paddingHorizontal: 20,
   },
   emptyImage: {

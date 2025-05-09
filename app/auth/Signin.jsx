@@ -20,7 +20,6 @@ import { auth } from "./firebaseConfig";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-
 const { width } = Dimensions.get("window");
 
 export default function SignIn() {
@@ -35,34 +34,37 @@ export default function SignIn() {
 
   const handleSignIn = async () => {
     try {
-      
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
       const user = userCredential.user;
-      await AsyncStorage.setItem('userToken', user.uid);
-      console.log('Signed in user:', user.uid);
+      await AsyncStorage.setItem("userToken", user.uid);
+      console.log("Signed in user:", user.uid);
       router.replace("/");
     } catch (error) {
-      let errorMessage = 'Sign in failed';
-      
+      let errorMessage = "Sign in failed";
+
       switch (error.code) {
-        case 'auth/invalid-email':
-          errorMessage = 'Invalid email address';
+        case "auth/invalid-email":
+          errorMessage = "Invalid email address";
           break;
-        case 'auth/user-not-found':
-          errorMessage = 'User not found';
+        case "auth/user-not-found":
+          errorMessage = "User not found";
           break;
-        case 'auth/wrong-password':
-          errorMessage = 'Incorrect password';
+        case "auth/wrong-password":
+          errorMessage = "Incorrect password";
           break;
       }
 
-      Alert.alert('Sign In Error', errorMessage);
+      Alert.alert("Sign In Error", errorMessage);
       console.error("Error signing in user:", error);
     }
   };
 
   const handleForgotPassword = () => {
-    router.replace('/auth/ForgotPassword');
+    router.replace("/auth/ForgotPassword");
   };
 
   return (
@@ -112,7 +114,11 @@ export default function SignIn() {
 
               <View style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>
-                  <Ionicons name="lock-closed-outline" size={16} color="white" />{" "}
+                  <Ionicons
+                    name="lock-closed-outline"
+                    size={16}
+                    color="white"
+                  />{" "}
                   Password
                 </Text>
                 <View style={styles.passwordContainer}>
@@ -146,7 +152,10 @@ export default function SignIn() {
                 </View>
               </View>
 
-              <TouchableOpacity style={styles.forgotPassword} onPress={handleForgotPassword}>
+              <TouchableOpacity
+                style={styles.forgotPassword}
+                onPress={handleForgotPassword}
+              >
                 <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
               </TouchableOpacity>
             </BlurView>
@@ -158,7 +167,7 @@ export default function SignIn() {
                 onPress={() => {
                   handleSignIn();
                   console.log("Sign In data:", { email, password });
-                  // router.replace("/Home");
+                  router.replace("/(tabs)");
                 }}
               >
                 <Text style={styles.buttonText}>Sign In</Text>
@@ -249,11 +258,11 @@ const styles = StyleSheet.create({
     marginTop: 30,
     marginBottom: 20,
     overflow: "hidden",
-    width: '100%',
+    width: "100%",
     maxWidth: 400,
-    alignSelf: 'center',
+    alignSelf: "center",
     gap: 18,
-    borderColor: 'white',
+    borderColor: "white",
     borderWidth: 1.5,
   },
   inputContainer: {
@@ -393,7 +402,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.12,
     shadowRadius: 6,
     elevation: 3,
-    width: '100%',
+    width: "100%",
     maxWidth: 400,
     flexDirection: "row",
     justifyContent: "center",

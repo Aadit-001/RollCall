@@ -3,8 +3,14 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'reac
 import { router } from 'expo-router';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from './firebaseConfig';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
+import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function ForgotPassword() {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -55,8 +61,18 @@ export default function ForgotPassword() {
     }
   };
 
+  const handleBack = () => {
+    router.replace('/auth/Signin');
+  };
+
   return (
-    <View style={styles.container}>
+    <SafeAreaProvider>
+    <SafeAreaView style={styles.container}>
+      <StatusBar style="light" backgroundColor="#121212"/>
+      <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+        <Ionicons name="arrow-back" size={24} color="white" />
+        <Text style={styles.backTitle}>Forgot Password</Text>
+      </TouchableOpacity>
       <Text style={styles.title}>Forgot Password</Text>
       <TextInput
         style={styles.input}
@@ -79,7 +95,9 @@ export default function ForgotPassword() {
           {isLoading ? 'Sending...' : 'Reset Password'}
         </Text>
       </TouchableOpacity>
-    </View>
+
+    </SafeAreaView>
+    </SafeAreaProvider>
   );
 }
 
@@ -89,6 +107,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 20,
     backgroundColor: '#181818',
+  },
+  backButton: {
+    flexDirection: 'row',
+    // alignItems: 'center',
+    position: 'absolute',
+    top: 60,
+    left: 12,
+    gap:10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+
+  },
+  backTitle: {
+    fontSize: 24,
+    color: '#fff',
+    // marginBottom: 20,
+    textAlign: 'center',
   },
   title: {
     fontSize: 24,

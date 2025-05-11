@@ -58,7 +58,7 @@ const styles = StyleSheet.create({
   contentContainer: {
     flex: 1,
     justifyContent: "flex-end", // Position at the bottom
-    paddingBottom: 60,
+    paddingBottom: 40,
     paddingHorizontal: 24,
   },
   buttonContainer: {
@@ -67,10 +67,10 @@ const styles = StyleSheet.create({
   button: {
     backgroundColor: "#1E90FF",
     paddingVertical: 15,
-    borderRadius: 30,
+    borderRadius: 12,
     alignItems: "center",
-    marginBottom: 60,
-    width: "80%",
+    marginBottom: 40,
+    width: "100%",
     alignSelf: "center",
   },
   buttonText: {

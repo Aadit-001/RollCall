@@ -53,7 +53,10 @@
     "react-native-svg": "^15.11.2",
     "react-native-uuid": "^2.0.3",
     "react-native-web": "~0.19.13",
-    "react-native-webview": "13.12.5"
+    "react-native-webview": "13.12.5",
+    "expo-auth-session": "~6.0.3",
+    "expo-crypto": "~14.0.2",
+    "expo-dev-client": "~5.0.20"
   },
   "devDependencies": {
     "@babel/core": "^7.27.1",

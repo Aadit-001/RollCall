@@ -70,9 +70,9 @@ const ProfileScreen = () => {
           try {
             await signOut(auth);
             await AsyncStorage.multiRemove([
-              "userToken", "userName", "userEmail", 
+              "userToken", 
               "userTimetable", "timetable", "percentage", 
-              "timetableData", "subjects", "onboardingDone"
+              "timetableData", "subjects"
             ]);
             router.replace("/auth/Signin");
           } catch (error) {

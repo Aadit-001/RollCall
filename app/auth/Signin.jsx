@@ -11,6 +11,7 @@ import {
   ScrollView,
   Platform,
   Dimensions,
+  Alert
 } from "react-native";
 import { Link, router } from "expo-router";
 import { images } from "@/constants/images";
@@ -19,6 +20,7 @@ import { BlurView } from "expo-blur";
 import { auth } from "./firebaseConfig";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 const { width } = Dimensions.get("window");
 
@@ -39,12 +41,21 @@ export default function SignIn() {
         email,
         password
       );
+      console.log("User signed in:", userCredential.user);
+      if(!userCredential){
+        Alert.alert("Invalid Credentials");
+        return;
+      }
       const user = userCredential.user;
+      if(!user){
+        Alert.alert("Invalid Credentials");
+        return;
+      }
       await AsyncStorage.setItem("userToken", user.uid);
       console.log("Signed in user:", user.uid);
-      router.replace("/");
+      router.replace("/(tabs)/");
     } catch (error) {
-      let errorMessage = "Sign in failed";
+      let errorMessage = "Invalid Credentials";
 
       switch (error.code) {
         case "auth/invalid-email":
@@ -59,7 +70,7 @@ export default function SignIn() {
       }
 
       Alert.alert("Sign In Error", errorMessage);
-      console.error("Error signing in user:", error);
+      // console.error("Error signing in user:", error);
     }
   };
 
@@ -68,8 +79,8 @@ export default function SignIn() {
   };
 
   return (
+    // <SafeAreaProvider>
     <>
-      <StatusBar hidden />
       <ImageBackground
         source={images.reg}
         style={styles.backgroundImage}
@@ -77,7 +88,8 @@ export default function SignIn() {
       >
         {/* <View style={styles.overlay} /> */}
 
-        <SafeAreaView style={styles.contentContainer}>
+        <View style={styles.contentContainer}>
+          <StatusBar style="light" backgroundColor="#121212"/>
           <ScrollView
             style={styles.scrollView}
             showsVerticalScrollIndicator={false}
@@ -92,10 +104,10 @@ export default function SignIn() {
 
             <BlurView intensity={90} tint="dark" style={styles.formContainer}>
               <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>
-                  <Ionicons name="mail-outline" size={16} color="white" /> Email
-                  Address
-                </Text>
+                <View style={styles.inputLabel}>
+                <Ionicons name="mail-outline" size={16} color="white" />
+                <Text style={{color: "white" , fontWeight: "600",marginStart: 4}}>Email Address</Text>
+                </View>
                 <TextInput
                   style={[
                     styles.input,
@@ -113,14 +125,10 @@ export default function SignIn() {
               </View>
 
               <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>
-                  <Ionicons
-                    name="lock-closed-outline"
-                    size={16}
-                    color="white"
-                  />{" "}
-                  Password
-                </Text>
+              <View style={styles.inputLabel}>
+                <Ionicons name="lock-closed-outline" size={16} color="white" />
+                <Text style={{color: "white" , fontWeight: "600",marginStart: 4}}>Password</Text>
+                </View>
                 <View style={styles.passwordContainer}>
                   <TextInput
                     style={[
@@ -166,8 +174,9 @@ export default function SignIn() {
                 activeOpacity={0.8}
                 onPress={() => {
                   handleSignIn();
+
                   console.log("Sign In data:", { email, password });
-                  router.replace("/(tabs)");
+                  // router.replace("/(tabs)");
                 }}
               >
                 <Text style={styles.buttonText}>Sign In</Text>
@@ -198,8 +207,9 @@ export default function SignIn() {
               </View>
             </View>
           </ScrollView>
-        </SafeAreaView>
+        </View>
       </ImageBackground>
+     {/* </SafeAreaProvider> */}
     </>
   );
 }
@@ -216,19 +226,20 @@ const styles = StyleSheet.create({
   contentContainer: {
     flex: 1,
     justifyContent: "center",
-    paddingHorizontal: 12,
+    paddingHorizontal: 22,
+    marginTop: 60,
     paddingTop: Platform.OS === "android" ? 40 : 20,
   },
   scrollView: {
     flex: 1,
   },
   scrollViewContent: {
-    paddingBottom: 30,
-    padding: 30,
+    // paddingBottom: 30,
+    // padding: 30,
   },
   headerContainer: {
     marginBottom: 40,
-    marginTop: 60,
+    marginTop: 30,
     alignItems: "center",
   },
   headerText: {
@@ -238,41 +249,46 @@ const styles = StyleSheet.create({
     textShadowColor: "rgba(0, 0, 0, 0.75)",
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 5,
-    marginBottom: 12,
+    // marginBottom: 12,
     textAlign: "center",
   },
   subHeaderText: {
-    fontSize: 16,
+    fontSize: 12,
     color: "#F0F0F0",
-    textShadowColor: "rgba(0, 0, 0, 0.75)",
+    textShadowColor: "rgba(0, 0, 0, 0.36)",
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 5,
     textAlign: "center",
     width: "80%",
-    lineHeight: 22,
+    lineHeight: 16,
   },
   formContainer: {
-    backgroundColor: "transparent",
-    borderRadius: 15,
-    padding: 20,
-    marginTop: 30,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    borderRadius: 12,
+    padding: 16,
+    // marginTop: 30,
     marginBottom: 20,
     overflow: "hidden",
     width: "100%",
     maxWidth: 400,
     alignSelf: "center",
-    gap: 18,
-    borderColor: "white",
-    borderWidth: 1.5,
+    gap: 10,
+    borderColor: "#1E90FF",
+    borderTopColor: "#1E90FF",
+    borderTopWidth: 10,
+    borderWidth: 0.2,
   },
   inputContainer: {
     marginBottom: 22,
   },
   inputLabel: {
-    fontSize: 16,
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    fontSize: 12,
     fontWeight: "600",
     color: "white",
-    opacity: 0.6,
+    opacity: 0.4,
     marginBottom: 10,
     marginLeft: 4,
     flexDirection: "row",
@@ -284,14 +300,14 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingHorizontal: 18,
     fontSize: 16,
-    borderColor: "#E8E8E8",
-    borderWidth: 1.5,
+    borderColor: "rgba(255, 255, 255, 0.27)",
+    borderWidth: 1,
     color: "white",
-    shadowColor: "#BBB",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 1,
+    // shadowColor: "#BBB",
+    // shadowOffset: { width: 0, height: 2 },
+    // shadowOpacity: 0.1,
+    // shadowRadius: 4,
+    // elevation: 1,
   },
   inputFocused: {
     borderColor: "#1E90FF",
@@ -310,14 +326,14 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingHorizontal: 18,
     fontSize: 16,
-    borderColor: "#E8E8E8",
-    borderWidth: 1.5,
+    borderColor: "rgba(255, 255, 255, 0.27)",
+    borderWidth: 1,
     color: "white",
-    shadowColor: "#BBB",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 1,
+    // shadowColor: "#BBB",
+    // shadowOffset: { width: 0, height: 2 },
+    // shadowOpacity: 0.1,
+    // shadowRadius: 4,
+    // elevation: 1,
     flex: 1,
   },
   eyeIcon: {
@@ -326,20 +342,25 @@ const styles = StyleSheet.create({
     padding: 5,
   },
   buttonContainer: {
-    width: "100%",
+    width: "98%",
     alignItems: "center",
+    // gap: 18,
+    // marginTop: 4,
+    // marginBottom: 10,
+    maxWidth: 400,
+    alignSelf: 'center',
   },
   button: {
     backgroundColor: "#1E90FF",
     paddingVertical: 16,
-    borderRadius: 30,
+    borderRadius: 12,
     alignItems: "center",
-    marginBottom: 24,
-    shadowColor: "#1E90FF",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    elevation: 6,
+    // marginBottom: 24,
+    // shadowColor: "#1E90FF",
+    // shadowOffset: { width: 0, height: 6 },
+    // shadowOpacity: 0.35,
+    // shadowRadius: 10,
+    // elevation: 6,
     width: "100%",
     flexDirection: "row",
     justifyContent: "center",
@@ -371,7 +392,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginTop: 10,
-    backgroundColor: "rgba(0, 0, 0, 0.3)",
+    backgroundColor: "transparent",
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 30,
@@ -394,7 +415,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     opacity: 0.8,
     paddingVertical: 14,
-    borderRadius: 30,
+    borderRadius: 12,
     alignItems: "center",
     marginBottom: 0,
     shadowColor: "#000",
@@ -427,8 +448,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 10,
-    backgroundColor: "rgba(0, 0, 0, 0.3)",
+    marginTop: 2,
+    backgroundColor: "transparent",
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 30,

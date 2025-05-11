@@ -3,7 +3,10 @@ import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc, collection, addDoc, getFirestore, Timestamp } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { auth, db } from './firebaseConfig';
+import { provider } from './firebaseConfig';
+import { signInWithPopup } from 'firebase/auth';
 import { Alert } from 'react-native';
+import { getDoc } from 'firebase/firestore';
 import {
   SafeAreaView,
   StyleSheet,
@@ -75,7 +78,78 @@ function Register() {
       }
 
       Alert.alert('Registration Error', errorMessage);
-      console.error("Error registering user:", error);
+      // console.error("Error registering user:", error);
+    }
+  };
+
+
+  const handleGoogleSignUp = async () => {
+    try {
+      // Configure provider to allow popups
+      provider.setCustomParameters({
+        'prompt': 'select_account',
+        'display': 'popup'
+      });
+
+      const result = await signInWithPopup(auth, provider);
+      
+
+      // Check if user exists in Firestore
+      const userDoc = doc(db, "users", result.user.uid);
+      const docSnap = await getDoc(userDoc);
+
+      // If user doesn't exist, create new document
+      if (!docSnap.exists()) {
+        await setDoc(userDoc, {
+          uid: result.user.uid,
+          name: result.user.displayName,
+          email: result.user.email,
+          createdAt: Timestamp.now()
+        });
+      }
+
+      await AsyncStorage.setItem('userName', result.user.displayName);
+      await AsyncStorage.setItem('userEmail', result.user.email);
+      router.replace('/');
+      // First update local storage
+      // localStorage.setItem('user', JSON.stringify(result.user));
+      
+      // Then update app state
+      // setIsUserLoggedIn(true);
+      // setCurrentUserId(user.uid);
+      // setUser(result.user);
+      // setShowSignUp(false);
+      // window.location.reload();
+
+      // toast.success('User Signed up successfully', {
+      //   position: "bottom-right",
+      //   autoClose: 1000,
+      //   hideProgressBar: false,
+      //   closeOnClick: false,
+      //   pauseOnHover: true,
+      //   draggable: true,
+      //   progress: undefined,
+      //   theme: "colored",
+      // });
+
+      // Finally navigate
+      // if(location.pathname === '/') {
+      //   // If we're already on home page, no need to navigate
+      //   return;
+      // }
+      // navigate(location.pathname);
+
+    } catch (error) {
+      console.error('Google Sign-Up Error:', error);
+      
+      // Specific error handling
+      if (error.code === 'auth/popup-closed-by-user') {
+        Alert.alert('Sign-up popup was closed. Please try again.');
+      } else if (error.code === 'auth/cancelled-popup-request') {
+        Alert.alert('Sign-up request was cancelled. Please try again.');
+      } else {
+        Alert.alert('Authentication failed. Please try again.');
+      }
     }
   };
 
@@ -84,13 +158,13 @@ function Register() {
 
   return (
     <>
-      <StatusBar hidden />
       <ImageBackground
         source={images.reg}
         style={styles.backgroundImage}
         resizeMode="cover"
       >
         {/*make the bakcground image or background colour darken so taht the above thing is clearly visible */}
+        <StatusBar hidden />
         {/* <View style={styles.overlay} />     */}
 
 
@@ -110,9 +184,10 @@ function Register() {
 
             <BlurView intensity={90} tint="dark" style={styles.formContainer}>
               <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>
-                  <Ionicons name="mail-outline" size={16} color="white" /> Name
-                </Text>
+              <View style={styles.inputLabel}>
+                <Ionicons name="person-outline" size={16} color="white" />
+                <Text style={{color: "white" , fontWeight: "600",marginStart: 4}}>Name</Text>
+                </View>
                 <TextInput
                   style={[
                     styles.input,
@@ -132,10 +207,10 @@ function Register() {
               </View>
 
               <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>
-                  <Ionicons name="mail-outline" size={16} color="white" /> Email
-                  Address
-                </Text>
+                <View style={styles.inputLabel}>
+                                <Ionicons name="mail-outline" size={16} color="white" />
+                                <Text style={{color: "white" , fontWeight: "600",marginStart: 4}}>Email Address</Text>
+                                </View>
                 <TextInput
                   style={[
                     styles.input,
@@ -155,10 +230,10 @@ function Register() {
               </View>
 
               <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>
-                  <Ionicons name="lock-closed-outline" size={16} color="white" />{" "}
-                  Password
-                </Text>
+                <View style={styles.inputLabel}>
+                                <Ionicons name="lock-closed-outline" size={16} color="white" />
+                                <Text style={{color: "white" , fontWeight: "600",marginStart: 4}}>Password</Text>
+                                </View>
                 <View style={styles.passwordContainer}>
                   <TextInput
                     style={[
@@ -211,7 +286,7 @@ function Register() {
               <TouchableOpacity
                 style={styles.googleButton}
                 activeOpacity={0.8}
-                onPress={() => console.log("Google Sign In")}
+                onPress={handleGoogleSignUp}
               >
                 <Ionicons name="logo-google" size={20} color="#444" />
                 <Text style={styles.googleButtonText}>Sign in with Google</Text>
@@ -245,7 +320,8 @@ const styles = StyleSheet.create({
   contentContainer: {
     flex: 1,
     justifyContent: "center",
-    paddingHorizontal: 12,
+    paddingHorizontal: 22,
+    marginTop: 26,
     paddingTop: Platform.OS === "android" ? 40 : 20,
     // backgroundColor: "#030c15",
   },
@@ -253,8 +329,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollViewContent: {
-    paddingBottom: 30,
-    padding: 30,
+    // paddingBottom: 30,
+    // padding: 30,
   },
   headerContainer: {
     marginBottom: 40,
@@ -268,43 +344,47 @@ const styles = StyleSheet.create({
     textShadowColor: "rgba(0, 0, 0, 0.75)",
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 5,
-    marginBottom: 12,
+    // marginBottom: 12,
     textAlign: "center",
   },
   subHeaderText: {
-    fontSize: 16,
+    fontSize: 12,
     color: "#F0F0F0",
-    textShadowColor: "rgba(0, 0, 0, 0.75)",
+    textShadowColor: "rgba(0, 0, 0, 0.36)",
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 5,
     textAlign: "center",
     width: "80%",
-    lineHeight: 22,
+    lineHeight: 16,
   },
   formContainer: {
-    backgroundColor: "transparent",
-    borderRadius: 15,
-    padding: 20,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    borderRadius: 12,
+    padding: 16,
     // marginTop: 30,
     marginBottom: 20,
     overflow: "hidden",
     width: '100%',
     maxWidth: 400,
     alignSelf: 'center',
-    gap: 18,
-    borderColor: 'white',
-    borderWidth: 1.5,
+    gap: 10,
+    borderColor: '#1E90FF',
+    borderTopColor: '#1E90FF',
+    borderTopWidth: 10,
+    // borderBottomWidth: 1,
+    borderWidth: 0.2,
+    
     
   },
   inputContainer: {
-    marginBottom: 10,
+    // marginBottom: 10,
     width: '100%',
   },
   inputLabel: {
-    fontSize: 16,
+    fontSize: 10,
     fontWeight: "600",
     color: "white",
-    opacity: 0.6,
+    opacity: 0.4,
     marginBottom: 10,
     marginLeft: 4,
     flexDirection: "row",
@@ -317,14 +397,14 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingHorizontal: 18,
     fontSize: 16,
-    borderColor: "#E8E8E8",
-    borderWidth: 1.5,
+    borderColor: "rgba(255, 255, 255, 0.27)",
+    borderWidth: 1,
     color: "white",
-    shadowColor: "#BBB",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 1,
+    // shadowColor: "#BBB",
+    // shadowOffset: { width: 0, height: 2 },
+    // shadowOpacity: 0.1,
+    // shadowRadius: 4,
+    // elevation: 1,
   },
   inputFocused: {
     borderColor: "#1E90FF",
@@ -344,14 +424,14 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingHorizontal: 18,
     fontSize: 16,
-    borderColor: "#E8E8E8",
-    borderWidth: 1.5,
+    borderColor: "rgba(255, 255, 255, 0.27)",
+    borderWidth: 1,
     color: "white",
-    shadowColor: "#BBB",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 1,
+    // shadowColor: "#BBB",
+    // shadowOffset: { width: 0, height: 2 },
+    // shadowOpacity: 0.1,
+    // shadowRadius: 4,
+    // elevation: 1,
     flex: 1,
   },
   eyeIcon: {
@@ -360,7 +440,7 @@ const styles = StyleSheet.create({
     padding: 5,
   },
   buttonContainer: {
-    width: '100%',
+    width: '98%',
     alignItems: 'center',
     gap: 18,
     marginTop: 4,
@@ -369,7 +449,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   buttonContainerGoogle: {
-    width: '100%',
+    width: '98%',
     alignItems: 'center',
     gap: 18,
     marginTop: 4,
@@ -381,14 +461,14 @@ const styles = StyleSheet.create({
     backgroundColor: "#1E90FF",
     paddingVertical: 16,
     // paddingHorizontal: 40,
-    borderRadius: 30,
+    borderRadius: 12,
     alignItems: "center",
     marginBottom: 0,
-    shadowColor: "#1E90FF",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.28,
-    shadowRadius: 10,
-    elevation: 6,
+    // shadowColor: "#1E90FF",
+    // shadowOffset: { width: 0, height: 6 },
+    // shadowOpacity: 0.28,
+    // shadowRadius: 10,
+    // elevation: 6,
     width: '100%',
     maxWidth: 400,
     flexDirection: "row",
@@ -422,8 +502,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginTop: -6,
-    backgroundColor: "rgba(0, 0, 0, 0.3)",
-    paddingVertical: 12,
+    backgroundColor: "transparent",
+    paddingVertical: 6,
     paddingHorizontal: 20,
     borderRadius: 30,
   },
@@ -446,7 +526,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     opacity: 0.8,
     paddingVertical: 14,
-    borderRadius: 30,
+    borderRadius: 12,
     alignItems: "center",
     marginBottom: 0,
     shadowColor: "#000",

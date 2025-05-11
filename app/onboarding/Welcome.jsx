@@ -17,7 +17,7 @@ export default function Welcome() {
   return (
     <View style={styles.container}>
       {/* Hide the status bar completely */}
-      <StatusBar hidden />
+      <StatusBar hidden/>
 
       <ImageBackground
         source={images.onboarding1}
@@ -59,7 +59,7 @@ const styles = StyleSheet.create({
   button: {
     backgroundColor: "#1E90FF",
     paddingVertical: 15,
-    borderRadius: 30,
+    borderRadius: 12,
     alignItems: "center",
     marginBottom: 20,
   },

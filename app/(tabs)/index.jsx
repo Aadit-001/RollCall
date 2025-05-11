@@ -5,7 +5,7 @@ import {
   TouchableOpacity,
   SafeAreaView,
 } from "react-native";
-import React, { useState, useCallback , useEffect} from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { FlatList, Pressable } from "react-native-gesture-handler";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -14,7 +14,6 @@ import { LinearGradient } from "expo-linear-gradient";
 import AttendancePercentageFinder from "@/components/AttendancePercentageFinder";
 import { StatusBar } from "expo-status-bar";
 import { Alert } from "react-native";
-
 
 const getToday = () => {
   const days = [
@@ -32,8 +31,8 @@ const getToday = () => {
 const getCurrentDateString = () => {
   const date = new Date();
   const year = date.getFullYear();
-  const month = (date.getMonth() + 1).toString().padStart(2, '0'); // Months are 0-indexed
-  const day = date.getDate().toString().padStart(2, '0');
+  const month = (date.getMonth() + 1).toString().padStart(2, "0"); // Months are 0-indexed
+  const day = date.getDate().toString().padStart(2, "0");
   return `${year}-${month}-${day}`;
 };
 
@@ -41,7 +40,7 @@ const Home = () => {
   const [lectures, setLectures] = useState([]);
   const [hasTimetable, setHasTimetable] = useState(false);
   const [showAttendanceFinder, setShowAttendanceFinder] = useState(false);
-  const [name, setName] = useState('');
+  const [name, setName] = useState("");
   const router = useRouter();
 
   useFocusEffect(
@@ -63,71 +62,81 @@ const Home = () => {
 
   // Load today's lectures from timetable in AsyncStorage
   const loadTodayLectures = async () => {
-    try {
-      const timetableData = await AsyncStorage.getItem("timetable");
-      const currentDateString = getCurrentDateString(); // Added back
-      const lastAttendanceDate = await AsyncStorage.getItem("lastAttendanceDate"); // Added back
+  try {
+    const timetableData = await AsyncStorage.getItem("timetable");
+    const currentDateString = getCurrentDateString(); 
+    const lastAttendanceDate = await AsyncStorage.getItem("lastAttendanceDate");
 
-      if (lastAttendanceDate && lastAttendanceDate !== currentDateString) {
-        // Day has changed, clear old statuses for the previous day
-        console.log(`Day changed from ${lastAttendanceDate} to ${currentDateString}. Clearing old statuses.`);
-        const allKeys = await AsyncStorage.getAllKeys();
-        // Filter for keys that start with the lastAttendanceDate and the specific prefix we use for statuses
-        const keysToRemove = allKeys.filter(key => key.startsWith(`${lastAttendanceDate}_lecture_status_`));
-        if (keysToRemove.length > 0) {
-          await AsyncStorage.multiRemove(keysToRemove);
-          console.log("Cleared old attendance statuses for:", lastAttendanceDate, keysToRemove);
-        }
+    if (lastAttendanceDate && lastAttendanceDate !== currentDateString) {
+      // Day change handling code (unchanged)
+      console.log(`Day changed from ${lastAttendanceDate} to ${currentDateString}. Clearing old statuses.`);
+      const allKeys = await AsyncStorage.getAllKeys();
+      const keysToRemove = allKeys.filter((key) =>
+        key.startsWith(`${lastAttendanceDate}_lecture_status_`)
+      );
+      if (keysToRemove.length > 0) {
+        await AsyncStorage.multiRemove(keysToRemove);
+        console.log("Cleared old attendance statuses for:", lastAttendanceDate, keysToRemove);
       }
-      // Update the last date for which attendance was loaded/checked to the current date
-      await AsyncStorage.setItem("lastAttendanceDate", currentDateString);
+    }
+    
+    await AsyncStorage.setItem("lastAttendanceDate", currentDateString);
 
-      console.log("timetableData loaded in loadTodayLectures:", timetableData ? "Yes" : "No");
-      if (timetableData) {
-        const timetable = JSON.parse(timetableData);
-        const today = getToday();
-        const todayEntry = timetable.days?.find((d) => d.day === today);
+    console.log("timetableData loaded in loadTodayLectures:", timetableData ? "Yes" : "No");
+    if (timetableData) {
+      const timetable = JSON.parse(timetableData);
+      const today = getToday();
+      const todayEntry = timetable.days?.find((d) => d.day === today);
 
-        if (
-          todayEntry &&
-          todayEntry.subjects &&
-          todayEntry.subjects.length > 0
-        ) {
-          console.log(`Found ${todayEntry.subjects.length} lectures for ${today}`);
-          // Asynchronously fetch markedStatus for each lecture of the current day
-          const lecturesForToday = await Promise.all(
-            todayEntry.subjects.map(async (subject) => {
-              // Consistent key: DATE_lecture_status_SUBJECTNAME_STARTTIME
-              const lectureStatusKey = `${currentDateString}_lecture_status_${subject.name}_${subject.startTime}`;
-              const markedStatus = await AsyncStorage.getItem(lectureStatusKey);
-              // console.log(`Status for ${subject.name} at ${subject.startTime} (Key: ${lectureStatusKey}): ${markedStatus}`);
-              return {
-                ...subject,
-                day: today, // Ensure 'day' property is present, it's used in handleMarkAttendance
-                markedStatus: markedStatus || null, // Load status or default to null if not found
-              };
-            })
-          );
-          setLectures(lecturesForToday);
-          setHasTimetable(true);
-          // console.log("Processed lectures for today with statuses:", lecturesForToday);
-        } else {
-          console.log(`No lectures found for ${today} in timetable or timetable structure issue.`);
-          setLectures([]);
-          setHasTimetable(false);
-        }
+      if (todayEntry && todayEntry.subjects && todayEntry.subjects.length > 0) {
+        console.log(`Found ${todayEntry.subjects.length} lectures for ${today}`);
+        
+        // Asynchronously fetch markedStatus for each lecture of the current day
+        const lecturesForToday = await Promise.all(
+          todayEntry.subjects.map(async (subject) => {
+            const lectureStatusKey = `${currentDateString}_lecture_status_${subject.name}_${subject.startTime}`;
+            const markedStatus = await AsyncStorage.getItem(lectureStatusKey);
+            return {
+              ...subject,
+              day: today,
+              markedStatus: markedStatus || null,
+            };
+          })
+        );
+        
+        // Sort lectures by start time
+        const sortedLectures = lecturesForToday.sort((a, b) => {
+          // Convert "HH:MM" strings to comparable values
+          const [aHours, aMinutes] = a.startTime.split(':').map(Number);
+          const [bHours, bMinutes] = b.startTime.split(':').map(Number);
+          
+          // Compare hours first
+          if (aHours !== bHours) {
+            return aHours - bHours;
+          }
+          // If hours are equal, compare minutes
+          return aMinutes - bMinutes;
+        });
+        
+        setLectures(sortedLectures);
+        setHasTimetable(true);
       } else {
-        console.log("No timetable data found in AsyncStorage.");
+        console.log(`No lectures found for ${today} in timetable or timetable structure issue.`);
         setLectures([]);
         setHasTimetable(false);
       }
-    } catch (error) {
+    } else {
+      console.log("No timetable data found in AsyncStorage.");
       setLectures([]);
       setHasTimetable(false);
-      console.error("Error in loadTodayLectures:", error);
-      Alert.alert("Error", "Failed to load lecture data. Please check console for details.");
     }
-  };
+  } catch (error) {
+    setLectures([]);
+    setHasTimetable(false);
+    console.error("Error in loadTodayLectures:", error);
+    Alert.alert("Error", "Failed to load lecture data. Please check console for details.");
+  }
+};
 
 
   const getInitials = (nameString) => {
@@ -142,15 +151,26 @@ const Home = () => {
   };
 
   const handleMarkAttendance = async (lectureItem, isPresent) => {
-    if (!lectureItem || !lectureItem.day || !lectureItem.name || !lectureItem.startTime) {
-      Alert.alert("Error", "Lecture information is incomplete to mark attendance.");
+    if (
+      !lectureItem ||
+      !lectureItem.day ||
+      !lectureItem.name ||
+      !lectureItem.startTime
+    ) {
+      Alert.alert(
+        "Error",
+        "Lecture information is incomplete to mark attendance."
+      );
       return;
     }
 
     try {
       const timetableString = await AsyncStorage.getItem("timetable");
       if (!timetableString) {
-        Alert.alert("Error", "Timetable data not found. Please set up your timetable.");
+        Alert.alert(
+          "Error",
+          "Timetable data not found. Please set up your timetable."
+        );
         return;
       }
 
@@ -158,10 +178,13 @@ const Home = () => {
       let subjectUpdatedInTimetable = false;
       const currentDateString = getCurrentDateString(); // For storing status with current date
 
-      timetable.days = timetable.days.map(dayObject => {
+      timetable.days = timetable.days.map((dayObject) => {
         if (dayObject.day === lectureItem.day) {
-          dayObject.subjects = dayObject.subjects.map(subject => {
-            if (subject.name === lectureItem.name && subject.startTime === lectureItem.startTime) {
+          dayObject.subjects = dayObject.subjects.map((subject) => {
+            if (
+              subject.name === lectureItem.name &&
+              subject.startTime === lectureItem.startTime
+            ) {
               // Only update attended/total if they haven't been marked for the day yet OR if you allow re-marking
               // Current logic always increments totalClasses and conditionally attendedClasses
               if (isPresent) {
@@ -169,7 +192,9 @@ const Home = () => {
               }
               subject.totalClasses = (subject.totalClasses || 0) + 1;
               subjectUpdatedInTimetable = true;
-              console.log(`Updated timetable counts for ${subject.name} on ${lectureItem.day}: Attended ${subject.attendedClasses}, Total ${subject.totalClasses}`);
+              console.log(
+                `Updated timetable counts for ${subject.name} on ${lectureItem.day}: Attended ${subject.attendedClasses}, Total ${subject.totalClasses}`
+              );
             }
             return subject;
           });
@@ -179,23 +204,31 @@ const Home = () => {
 
       if (subjectUpdatedInTimetable) {
         await AsyncStorage.setItem("timetable", JSON.stringify(timetable));
-        const newMarkedStatus = isPresent ? 'present' : 'absent';
-        
+        const newMarkedStatus = isPresent ? "present" : "absent";
+
         // Consistent key for storing status: DATE_lecture_status_SUBJECTNAME_STARTTIME
         const lectureStatusKey = `${currentDateString}_lecture_status_${lectureItem.name}_${lectureItem.startTime}`;
-        await AsyncStorage.setItem(lectureStatusKey, newMarkedStatus); 
-        console.log(`Saved status for ${lectureItem.name} at ${lectureItem.startTime} as ${newMarkedStatus} (Key: ${lectureStatusKey})`);
+        await AsyncStorage.setItem(lectureStatusKey, newMarkedStatus);
+        console.log(
+          `Saved status for ${lectureItem.name} at ${lectureItem.startTime} as ${newMarkedStatus} (Key: ${lectureStatusKey})`
+        );
 
         Alert.alert(
           "Success",
-          `${lectureItem.name} marked as ${isPresent ? 'Present' : 'Attended (Class Counted)'}.
+          `${lectureItem.name} marked as ${
+            isPresent ? "Present" : "Attended (Class Counted)"
+          }.
 Attendance will update on the Attendance Screen.`
         );
         // Update local state to reflect the change immediately
-        setLectures(prevLectures =>
-          prevLectures.map(lec => {
+        setLectures((prevLectures) =>
+          prevLectures.map((lec) => {
             // Ensure all parts of the unique lecture identifier match
-            if (lec.name === lectureItem.name && lec.startTime === lectureItem.startTime && lec.day === lectureItem.day) {
+            if (
+              lec.name === lectureItem.name &&
+              lec.startTime === lectureItem.startTime &&
+              lec.day === lectureItem.day
+            ) {
               return { ...lec, markedStatus: newMarkedStatus };
             }
             return lec;
@@ -203,14 +236,19 @@ Attendance will update on the Attendance Screen.`
         );
       } else {
         // This case should ideally not be reached if lectureItem comes from the loaded lectures list
-        Alert.alert("Error", `Could not find ${lectureItem.name} at ${lectureItem.startTime} for ${lectureItem.day} in timetable to update counts.`);
+        Alert.alert(
+          "Error",
+          `Could not find ${lectureItem.name} at ${lectureItem.startTime} for ${lectureItem.day} in timetable to update counts.`
+        );
       }
     } catch (error) {
       console.error("Failed to update attendance or save status:", error);
-      Alert.alert("Error", "An error occurred while updating attendance. Check console.");
+      Alert.alert(
+        "Error",
+        "An error occurred while updating attendance. Check console."
+      );
     }
   };
-
 
   // Logout and onboarding reset logic
   // const deleteOnboardingData = async () => {
@@ -224,16 +262,16 @@ Attendance will update on the Attendance Screen.`
   // };
 
   useEffect(() => {
-    AsyncStorage.getItem('userName').then(name => {
+    AsyncStorage.getItem("userName").then((name) => {
       if (name) {
         setName(name);
       }
     });
-  },[])
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar style="light" backgroundColor="#121212"/>
+      <StatusBar style="light" backgroundColor="#121212" />
       {showAttendanceFinder && (
         <AttendancePercentageFinder
           onClose={() => setShowAttendanceFinder(false)}
@@ -258,10 +296,8 @@ Attendance will update on the Attendance Screen.`
       <FlatList
         ListHeaderComponent={
           <>
-
-
             {/* Welcome Box */}
-          
+
             <Pressable style={styles.topBox}>
               <Text style={styles.topBoxText}>Welcome To</Text>
               <Text style={styles.topBoxTextName}>R O L L C A L L</Text>
@@ -338,7 +374,12 @@ Attendance will update on the Attendance Screen.`
               )} */}
               {item.startTime && item.endTime && (
                 <View style={styles.lectureDetailRow}>
-                  <MaterialIcons name="schedule" size={12} color={styles.lectureDetailIcon.color} style={styles.lectureDetailIcon} />
+                  <MaterialIcons
+                    name="schedule"
+                    size={12}
+                    color={styles.lectureDetailIcon.color}
+                    style={styles.lectureDetailIcon}
+                  />
                   <Text style={styles.lectureDetailText}>
                     {item.startTime} - {item.endTime}
                   </Text>
@@ -348,9 +389,9 @@ Attendance will update on the Attendance Screen.`
 
             {/* Attendance Actions Section */}
             <View style={styles.attendanceActionsContainer}>
-              {item.markedStatus === 'present' ? (
+              {item.markedStatus === "present" ? (
                 <Text style={styles.attendanceStatusTextPresent}>Present</Text>
-              ) : item.markedStatus === 'absent' ? (
+              ) : item.markedStatus === "absent" ? (
                 <Text style={styles.attendanceStatusTextAbsent}>Absent</Text>
               ) : (
                 <>
@@ -376,7 +417,12 @@ Attendance will update on the Attendance Screen.`
         ListEmptyComponent={
           !hasTimetable && (
             <View style={styles.ttPlaceholderBox}>
-              <Ionicons name="calendar-outline" size={80} color="#555" style={styles.ttPlaceholderIcon} />
+              <Ionicons
+                name="calendar-outline"
+                size={80}
+                color="#555"
+                style={styles.ttPlaceholderIcon}
+              />
               <Text style={styles.ttPlaceholderText}>
                 Please add your Timetable first.
               </Text>
@@ -396,6 +442,8 @@ Attendance will update on the Attendance Screen.`
       >
         <Text style={styles.logoutButtonText}>Logout</Text>
       </TouchableOpacity> */}
+
+      <View style={styles.bottomNav} />
     </SafeAreaView>
   );
 };
@@ -451,7 +499,7 @@ export default Home;
 //     fontWeight: "bold",
 //     flex: 1,
 //   },
-  
+
 //   headerTitle: {
 //     fontSize: 16,
 //     fontWeight: "bold",
@@ -713,15 +761,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     // gap: 8,
     minWidth: 100, // Give some minimum width to prevent layout shifts
-    justifyContent: 'flex-end',
-
+    justifyContent: "flex-end",
   },
   headerRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingTop: 10, 
+    paddingTop: 10,
     paddingBottom: 10,
     marginTop: 40,
   },
@@ -756,7 +803,7 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: "bold",
     color: "white",
-    marginLeft: 0, 
+    marginLeft: 0,
   },
   logoutButton: {
     backgroundColor: "#D32F2F", // Slightly less intense red
@@ -841,15 +888,15 @@ const styles = StyleSheet.create({
     lineHeight: 22, // Improved readability
   },
   lectureCard: {
-    backgroundColor: '#2C2C2E', // A slightly lighter dark shade for the card
+    backgroundColor: "#2C2C2E", // A slightly lighter dark shade for the card
     borderRadius: 12,
     padding: 16,
     marginVertical: 8,
     marginHorizontal: 2, // Or adjust as needed for your screen layout
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    shadowColor: '#000',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
@@ -860,43 +907,43 @@ const styles = StyleSheet.create({
     marginRight: 12, // Space between info and action buttons
   },
   lectureName: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 22,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 6,
   },
   lectureDetailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 2,
   },
   lectureDetailIcon: {
     marginRight: 3,
-    color: '#AEAEB2', // A muted color for icons
+    color: "#AEAEB2", // A muted color for icons
   },
   lectureDetailText: {
-    color: '#AEAEB2', // A slightly muted white for details
+    color: "#AEAEB2", // A slightly muted white for details
     fontSize: 12,
   },
   attendanceActionsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   attendanceButton: {
     width: 44, // Circular or rounded square buttons
     height: 44,
     borderRadius: 22, // Make it circular
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginLeft: 8, // Space between buttons
     // borderWidth: 1, // Optional: if you want a border
     // borderColor: '#555', // Optional: border color
   },
   absentButton: {
-    backgroundColor: '#FF3B30', // A standard red for absent
+    backgroundColor: "#FF3B30", // A standard red for absent
   },
   presentButton: {
-    backgroundColor: '#34C759', // A standard green for present
+    backgroundColor: "#34C759", // A standard green for present
   },
   timetableButtonContainer: {
     marginTop: 10, // Reduced margin
@@ -948,6 +995,9 @@ const styles = StyleSheet.create({
     height: 36, // Adjusted size
     alignItems: "center",
     justifyContent: "center",
+  },
+  bottomNav: {
+    height: 75,
   },
   // Removed unused styles: scrolle, header, addTTBtn, addTTBtnText, bottomNav, navIcon, attendanceContainer, headerTitle, headerText
   // The following styles seem to be remnants or duplicates and are not directly used by the main content structure visible:

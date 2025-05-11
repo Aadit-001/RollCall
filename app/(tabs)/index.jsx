@@ -222,7 +222,7 @@ const Home = () => {
         Alert.alert(
           "Success",
           `${lectureItem.name} marked as ${
-            isPresent ? "Present" : "Attended (Class Counted)"
+            isPresent ? "Present" : "Absent"
           }.
 Attendance will update on the Attendance Screen.`
         );

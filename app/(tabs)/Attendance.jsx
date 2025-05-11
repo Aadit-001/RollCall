@@ -1,16 +1,15 @@
-import { StyleSheet, View, Text } from "react-native";
-import React, { useState, useEffect, useCallback } from "react";
+import { StyleSheet, View, Text, TextInput,TouchableOpacity } from "react-native";
+import React, { useState, useEffect, useCallback,useMemo } from "react";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { FlatList } from "react-native-gesture-handler";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { TouchableOpacity } from "react-native";
 import AttendanceCard from "@/components/AttendanceCard";
 import { StatusBar } from "expo-status-bar";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { useFocusEffect } from '@react-navigation/native'; // Or from expo-router
+import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ActivityIndicator } from "react-native";
+import { Platform } from "react-native";
 
 
 
@@ -95,7 +94,8 @@ const Attendance = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [attendanceCriteria, setAttendanceCriteria] = useState(75); // Default criteria
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-
+  const [searchText, setSearchText] = useState(""); // Added for search
+  const [filteredData, setFilteredData] = useState([]); // Added for search
 
   const loadAttendanceDataFromTimetable = async () => {
     const timetableString = await AsyncStorage.getItem("timetable");
@@ -217,12 +217,28 @@ const Attendance = () => {
   // }
   
   // Create a flat list from subjectAttendanceData for rendering
-  const displayData = Object.keys(subjectAttendanceData).map(name => ({
-    subject: name,
-    professor: subjectAttendanceData[name].professor,
-    attended: subjectAttendanceData[name].attended,
-    total: subjectAttendanceData[name].total,
-  }));
+  const displayData = useMemo(() => {
+    return Object.keys(subjectAttendanceData).map(name => ({
+      subject: name,
+      professor: subjectAttendanceData[name].professor,
+      attended: subjectAttendanceData[name].attended,
+      total: subjectAttendanceData[name].total,
+    }));
+  }, [subjectAttendanceData]);
+
+  useEffect(() => {
+    if (searchText.trim() === "") {
+      setFilteredData(displayData);
+    } else {
+      const filtered = displayData.filter(
+        (item) =>
+          item.subject.toLowerCase().includes(searchText.toLowerCase()) ||
+          (item.professor && item.professor.toLowerCase().includes(searchText.toLowerCase()))
+      );
+      setFilteredData(filtered);
+    }
+  }, [searchText, displayData]);
+
 
   return (
     <SafeAreaProvider>
@@ -233,12 +249,32 @@ const Attendance = () => {
           <MaterialCommunityIcons name="view-agenda" size={28} color="white"/>
           <Text style={styles.title}>Attendance</Text>
         </View>
-        <TouchableOpacity onPress={() => router.push("/Notifications")}>
+        {/* <TouchableOpacity onPress={() => router.push("/Notifications")}>
           <Ionicons name="notifications-outline" size={28} color="#fff" />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
+      </View>
+      <View style={styles.searchContainer}>
+        <Ionicons
+          name="search"
+          size={20}
+          color="#aaa"
+          style={styles.searchIcon}
+        />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search subjects or professors..."
+          placeholderTextColor="#888"
+          value={searchText}
+          onChangeText={setSearchText}
+        />
+        {searchText.length > 0 && (
+          <TouchableOpacity onPress={() => setSearchText("")}>
+            <Ionicons name="close-circle" size={20} color="#888" />
+          </TouchableOpacity>
+        )}
       </View>
         <FlatList
-          data={displayData || []}
+          data={filteredData || []}
           keyExtractor={(item) => item.subject}
           renderItem={({ item }) => (
             <AttendanceCard
@@ -254,9 +290,19 @@ const Attendance = () => {
           // ScrollBar={false}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Ionicons name="list-circle-outline" size={60} color="#555" />
-              <Text style={styles.emptyText}>No subjects found in timetable.</Text>
-              <Text style={styles.emptySubText}>Add subjects via the Timetable screen.</Text>
+              {searchText.length > 0 ? (
+                <>
+                  <Ionicons name="search-outline" size={60} color="#555" />
+                  <Text style={styles.emptyText}>No matching subjects found.</Text>
+                  <Text style={styles.emptySubText}>Try a different search term.</Text>
+                </>
+              ) : (
+                <>
+                  <Ionicons name="list-circle-outline" size={60} color="#555" />
+                  <Text style={styles.emptyText}>No subjects found in timetable.</Text>
+                  <Text style={styles.emptySubText}>Add subjects via the Timetable screen.</Text>
+                </>
+              )}
             </View>
           }
           contentContainerStyle={styles.listContentContainer}
@@ -286,7 +332,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: 17, // Consolidated from 7
     paddingVertical: 13,
     // marginTop: 10,
-    marginBottom:5,
+    // marginBottom:5,
+  },
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.1)",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: Platform.OS === 'ios' ? 10 : 0, // Adjust padding for Android
+    marginHorizontal: 17,
+    marginBottom: 15,
+    marginTop: 5,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    color: "#fff",
+    fontSize: 16,
+    height: 40, // Ensure consistent height
+    paddingVertical: 0, // Reset padding for TextInput
   },
   profileGroup: {
     flexDirection: "row",

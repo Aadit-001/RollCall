@@ -9,6 +9,8 @@ import {
   Modal,
 } from "react-native";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { StatusBar } from "expo-status-bar";
+import { LinearGradient } from "expo-linear-gradient";
 
 export default function AttendancePercentageFinder({ onClose }) {
   const [attendanceCriteria, setAttendanceCriteria] = useState(75);
@@ -52,6 +54,7 @@ export default function AttendancePercentageFinder({ onClose }) {
       visible={true}
       onRequestClose={onClose}
     >
+      <StatusBar style="light" backgroundColor="#121212"/>
       <View style={styles.modalOverlay}>
         <View style={styles.glassContainer}>
           <Text style={styles.label}>Attendance Criteria (%)</Text>
@@ -111,7 +114,15 @@ export default function AttendancePercentageFinder({ onClose }) {
             style={styles.doneButton}
             onPress={handleDone}
           >
-            <Text style={styles.doneButtonText}>Done</Text>
+            <LinearGradient
+                            colors={["#3fa4ff", "#2389da"]}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            style={styles.doneBtnGradient}
+                          >
+                          <Text style={styles.doneButtonText}>Done</Text>
+
+                          </LinearGradient>
           </TouchableOpacity>
         </View>
       </View>
@@ -124,24 +135,27 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(21, 20, 20, 0.79)',
+    // backgroundColor: 'rgba(21, 20, 20, 0.79)',
+    backgroundColor: "rgba(0,0,0,0.7)",
 
   },
   glassContainer: {
-    backgroundColor: 'rgb(6, 1, 1)', 
-    borderRadius: 10,
+    backgroundColor: "#232323",
+    borderRadius: 24,
+    padding: 24,
+    width: "85%",
+    maxWidth: 360,
     borderWidth: 1,
-    padding: 20,
-    width: '90%',
+    borderColor: "rgba(255,255,255,0.1)",
     ...Platform.select({
       ios: {
-        shadowColor: 'rgba(0, 0, 0, 0.2)',
-        shadowOffset: { width: 0, height: 4 },
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 10 },
         shadowOpacity: 0.3,
-        shadowRadius: 5,
+        shadowRadius: 12,
       },
       android: {
-        elevation: 5,
+        elevation: 24,
       },
     }),
   },
@@ -247,7 +261,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#f0f0f0",
     paddingVertical: 8,
     paddingHorizontal: 12,
-    borderRadius: 20,
+    borderRadius: 10,
     marginBottom: 8,
     borderWidth: 1,
     borderColor: "#ddd",
@@ -267,12 +281,15 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   doneButton: {
-    backgroundColor: "#1E90FF",
-    paddingVertical: 15,
-    borderRadius: 30,
-    alignItems: "center",
+    borderRadius: 16,
+    overflow: "hidden",
+    height: 56,
     marginTop: 20,
-    width: "100%",
+  },
+  doneBtnGradient: {
+    alignItems: "center",
+    justifyContent: "center",
+    height: "100%",
   },
   doneButtonText: {
     color: "#FFF",

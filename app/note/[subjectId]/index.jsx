@@ -222,13 +222,8 @@ export default function SubjectTopics() {
           onPress={() => router.push(`/note/${subjectId}/${item.id}`)}
           activeOpacity={0.85}
         >
-          <LinearGradient
-            colors={colorSet}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.cardGradient}
-          >
-            <View style={styles.iconDot}>
+          <View style={styles.cardGradient}>
+            <View style={[styles.iconDot,{backgroundColor: colorSet[0]}]}>
               <FontAwesome5 name="book" size={14} color="#fff" />
             </View>
 
@@ -274,10 +269,10 @@ export default function SubjectTopics() {
                 style={[styles.actionIcon, styles.deleteIcon]}
                 onPress={() => handleDeleteTopic(item.id)}
               >
-                <Ionicons name="trash-outline" size={18} color="#fff" />
+                <Ionicons name="trash-outline" size={18} color="red" />
               </TouchableOpacity>
             </View>
-          </LinearGradient>
+          </View>
         </TouchableOpacity>
       </Animated.View>
     );
@@ -529,6 +524,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   cardGradient: {
+    backgroundColor: "#2C2C2E",
     flexDirection: "row",
     alignItems: "center",
     padding: 16,
@@ -583,7 +579,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,204,0,0.3)",
   },
   deleteIcon: {
-    backgroundColor: "rgba(255,0,0,0.2)",
+    backgroundColor: "rgba(255, 0, 0, 0.14)",
   },
   fab: {
     position: "absolute",

@@ -127,12 +127,12 @@ export default function Timetable() {
 
   const getRandomGradient = () => {
     const gradients = [
-      ["#3a7bd5", "#3a6073"],
-      ["#ff5f6d", "#ffc371"],
-      ["#11998e", "#38ef7d"],
-      ["#fc5c7d", "#6a82fb"],
-      ["#c94b4b", "#4b134f"],
-      ["#23074d", "#cc5333"],
+      ["#1FD141", "#1FD141"],
+      ["#007BFF", "green"],
+      ["#ff5f6d", "pink"],
+      ["#F9D142", "blue"],
+      ["#E94A87", "indigo"],
+      ["#FF6D00", "blue"],
     ];
     return gradients[Math.floor(Math.random() * gradients.length)];
   };

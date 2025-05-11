@@ -36,12 +36,21 @@ const getCurrentDateString = () => {
   return `${year}-${month}-${day}`;
 };
 
+
 const Home = () => {
   const [lectures, setLectures] = useState([]);
   const [hasTimetable, setHasTimetable] = useState(false);
   const [showAttendanceFinder, setShowAttendanceFinder] = useState(false);
   const [name, setName] = useState("");
+  const [todayy, setTodayy] = useState("");
   const router = useRouter();
+
+
+  useEffect(()=> {
+    const todayDate = getToday();
+    console.log(todayDate);
+    setTodayy(todayDate.toString());
+  },[])
 
   useFocusEffect(
     useCallback(() => {
@@ -286,19 +295,21 @@ Attendance will update on the Attendance Screen.`
           </TouchableOpacity>
           <Text style={styles.title}>{name}</Text>
         </View>
-        <TouchableOpacity onPress={() => router.push("/Notifications")}>
-          <Ionicons name="notifications-outline" size={28} color="#fff" />
-        </TouchableOpacity>
+        <View >
+          {/* <Ionicons name="notifications-outline" size={28} color="#fff" /> */}
+            <Text style={styles.headerText}>{todayy}</Text>
+            <Text style={styles.headerTex}>{new Date().toLocaleDateString()}</Text>
+        </View>
       </View>
       <FlatList
         ListHeaderComponent={
           <>
             {/* Welcome Box */}
 
-            <Pressable style={styles.topBox}>
+            <View style={styles.topBox}>
               <Text style={styles.topBoxText}>Welcome To</Text>
               <Text style={styles.topBoxTextName}>R O L L C A L L</Text>
-            </Pressable>
+            </View>
 
             {/* Creative Timetable Button - MOVED UP */}
             <View style={styles.timetableButtonContainer}>
@@ -441,8 +452,9 @@ Attendance will update on the Attendance Screen.`
       >
         <Text style={styles.logoutButtonText}>Logout</Text>
       </TouchableOpacity> */}
+      
 
-      <View style={styles.bottomNav} />
+      {/* <View style={styles.bottomNav} /> */}
     </SafeAreaView>
   );
 };
@@ -731,6 +743,16 @@ const styles = StyleSheet.create({
     // backgroundColor: "#181818",
     flex: 1,
     backgroundColor: "#121212",
+  },
+  headerText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  headerTex: {
+    color: "#AEAEB2",
+    fontSize: 10,
+    fontWeight: "bold",
   },
   attendanceStatusTextPresent: {
     color: "#22dd22",

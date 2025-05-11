@@ -117,12 +117,12 @@ const Notes = () => {
 
   const getRandomGradient = () => {
     const gradients = [
-      ["#3a7bd5", "#3a6073"],
-      ["#ff5f6d", "#ffc371"],
-      ["#11998e", "#38ef7d"],
-      ["#fc5c7d", "#6a82fb"],
-      ["#c94b4b", "#4b134f"],
-      ["#23074d", "#cc5333"],
+      ["#1FD141", "#1FD141"],
+      ["#007BFF", "green"],
+      ["#ff5f6d", "pink"],
+      ["#F9D142", "blue"],
+      ["#E94A87", "indigo"],
+      ["#FF6D00", "blue"],
     ];
     return gradients[Math.floor(Math.random() * gradients.length)];
   };
@@ -205,14 +205,15 @@ const Notes = () => {
           onPress={() => router.push(`/note/${item.id}`)}
           activeOpacity={0.9}
         >
-          <LinearGradient
+          {/* <LinearGradient
             colors={colorPair}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.gradient}
-          >
-            <View style={styles.iconCircle}>
-              <FontAwesome5 name={icon} size={20} color="#fff" />
+          > */}
+          <View style={styles.gradient}>
+            <View style={[styles.iconCircle,{backgroundColor: colorPair[0]}]}>
+              <FontAwesome5 name={icon} size={16} color="#fff" />
             </View>
             <View style={styles.cardContent}>
               <Text style={styles.cardText}>{item.name}</Text>
@@ -223,13 +224,14 @@ const Notes = () => {
                 </Text>
               </View>
             </View>
-          </LinearGradient>
+          </View>
+          {/* </LinearGradient> */}
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.deleteIcon}
           onPress={() => handleDeleteSubject(item.id)}
         >
-          <Ionicons name="trash-outline" size={14} color="orange" />
+          <Ionicons name="trash-outline" size={14} color="red" />
         </TouchableOpacity>
       </Animated.View>
     );
@@ -253,9 +255,9 @@ const Notes = () => {
               <Ionicons name="calendar-clear" size={28} color="white"/>
               <Text style={styles.headerText}>My Notes</Text>
             </View>
-            <TouchableOpacity onPress={() => router.push("/Notifications")}>
+            {/* <TouchableOpacity onPress={() => router.push("/Notifications")}>
                       <Ionicons name="notifications-outline" size={28} color="#fff" />
-                    </TouchableOpacity>
+                    </TouchableOpacity> */}
           </View>
 
           <View style={styles.searchContainer}>
@@ -414,7 +416,7 @@ const styles = StyleSheet.create({
     // paddingTop: 50,
     marginTop: 12,
     paddingBottom: 20,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
 
     
   },
@@ -450,7 +452,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.1)",
     borderRadius: 12,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    // paddingVertical: 6,
     marginTop: 4,
   },
   searchIcon: {
@@ -495,12 +497,13 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
     justifyContent: "space-between",
+    backgroundColor: "#2C2C2E",
   },
   iconCircle: {
-    width: 40,
-    height: 40,
+    width: 35,
+    height: 35,
     borderRadius: 20,
-    backgroundColor: "rgba(255,255,255,0.2)",
+    // backgroundColor: "#fff",
     alignItems: "center",
     justifyContent: "center",
     // marginBottom: 8,
@@ -517,20 +520,20 @@ const styles = StyleSheet.create({
   },
   topicsContainer: {
     backgroundColor: "rgba(0,0,0,0.2)",
-    borderRadius: 12,
-    padding: 8,
+    borderRadius: 6,
+    padding: 6,
     alignSelf: "flex-start",
     // marginTop: 10,
   },
   topicsCount: {
     color: "#fff",
-    fontSize: 14,
+    fontSize: 10,
   },
   deleteIcon: {
     position: "absolute",
     top: 4,
     right: 4,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: "rgba(255,0,0,0.14)",
     borderRadius: 16,
     width: 28,
     height: 28,

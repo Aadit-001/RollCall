@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import {
   View,
   Text,
@@ -234,7 +235,8 @@ export default function Timetable() {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaProvider> 
+    <SafeAreaView style={styles.container}>
       <StatusBar style="light" backgroundColor="#121212"/>
       <LinearGradient
         colors={["#121212", "#121212"]}
@@ -383,9 +385,11 @@ export default function Timetable() {
               </View>
             );
           }}
+          
         />
       </LinearGradient>
-    </View>
+    </SafeAreaView>
+    </SafeAreaProvider>
   );
 }
 
@@ -402,7 +406,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
     marginBottom: 2,
-    marginTop: 40,
+    // marginTop: 40,
     paddingVertical: 12,
     // backgroundColor: "black",
     // borderBottomLeftRadius: 12,
@@ -429,7 +433,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   listContainer: {
-    paddingBottom: 80,
+    // paddingBottom: 80,
     paddingHorizontal: 12,
   },
   daySection: {

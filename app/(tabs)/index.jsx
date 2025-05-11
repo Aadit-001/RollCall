@@ -161,7 +161,7 @@ const Home = () => {
       timetable.days = timetable.days.map(dayObject => {
         if (dayObject.day === lectureItem.day) {
           dayObject.subjects = dayObject.subjects.map(subject => {
-            if (subject.name === lectureItem.name && subject.startTime === lectureItem.startTime) {
+            if (subject.name === lectureItem.name) {
               // Only update attended/total if they haven't been marked for the day yet OR if you allow re-marking
               // Current logic always increments totalClasses and conditionally attendedClasses
               if (isPresent) {

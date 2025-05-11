@@ -18,6 +18,7 @@ import { useRouter, useFocusEffect } from "expo-router";
 import uuid from "react-native-uuid";
 import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
 const STORAGE_KEY = "subjects";
 const SUBJECT_ICONS = {
@@ -239,7 +240,8 @@ const Notes = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaProvider>
+    <SafeAreaView style={styles.container}>
       <StatusBar style="light" backgroundColor="#121212"/>
       <LinearGradient
         colors={["#121212", "#121212"]}
@@ -395,7 +397,9 @@ const Notes = () => {
           </Animated.View>
         </View>
       </Modal>
-    </View>
+    {/* </View> */}
+    </SafeAreaView>
+    </SafeAreaProvider>
   );
 };
 
@@ -407,7 +411,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#121212",
   },
   headerGradient: {
-    paddingTop: 50,
+    // paddingTop: 50,
+    marginTop: 12,
     paddingBottom: 20,
     paddingHorizontal: 20,
 
@@ -459,10 +464,10 @@ const styles = StyleSheet.create({
     padding: 0,
   },
   grid: {
-    alignItems: "left",
+    alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 20,
-    paddingHorizontal: 4,
+    // paddingVertical: 20,
+    // paddingHorizontal: 4,
     paddingBottom: 100,
   },
   cardContainer: {
@@ -515,7 +520,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 8,
     alignSelf: "flex-start",
-    marginTop: 10,
+    // marginTop: 10,
   },
   topicsCount: {
     color: "#fff",

@@ -62,91 +62,82 @@ const Home = () => {
 
   // Load today's lectures from timetable in AsyncStorage
   const loadTodayLectures = async () => {
-    try {
-      const timetableData = await AsyncStorage.getItem("timetable");
-      const currentDateString = getCurrentDateString(); // Added back
-      const lastAttendanceDate = await AsyncStorage.getItem(
-        "lastAttendanceDate"
-      ); // Added back
+  try {
+    const timetableData = await AsyncStorage.getItem("timetable");
+    const currentDateString = getCurrentDateString(); 
+    const lastAttendanceDate = await AsyncStorage.getItem("lastAttendanceDate");
 
-      if (lastAttendanceDate && lastAttendanceDate !== currentDateString) {
-        // Day has changed, clear old statuses for the previous day
-        console.log(
-          `Day changed from ${lastAttendanceDate} to ${currentDateString}. Clearing old statuses.`
-        );
-        const allKeys = await AsyncStorage.getAllKeys();
-        // Filter for keys that start with the lastAttendanceDate and the specific prefix we use for statuses
-        const keysToRemove = allKeys.filter((key) =>
-          key.startsWith(`${lastAttendanceDate}_lecture_status_`)
-        );
-        if (keysToRemove.length > 0) {
-          await AsyncStorage.multiRemove(keysToRemove);
-          console.log(
-            "Cleared old attendance statuses for:",
-            lastAttendanceDate,
-            keysToRemove
-          );
-        }
-      }
-      // Update the last date for which attendance was loaded/checked to the current date
-      await AsyncStorage.setItem("lastAttendanceDate", currentDateString);
-
-      console.log(
-        "timetableData loaded in loadTodayLectures:",
-        timetableData ? "Yes" : "No"
+    if (lastAttendanceDate && lastAttendanceDate !== currentDateString) {
+      // Day change handling code (unchanged)
+      console.log(`Day changed from ${lastAttendanceDate} to ${currentDateString}. Clearing old statuses.`);
+      const allKeys = await AsyncStorage.getAllKeys();
+      const keysToRemove = allKeys.filter((key) =>
+        key.startsWith(`${lastAttendanceDate}_lecture_status_`)
       );
-      if (timetableData) {
-        const timetable = JSON.parse(timetableData);
-        const today = getToday();
-        const todayEntry = timetable.days?.find((d) => d.day === today);
+      if (keysToRemove.length > 0) {
+        await AsyncStorage.multiRemove(keysToRemove);
+        console.log("Cleared old attendance statuses for:", lastAttendanceDate, keysToRemove);
+      }
+    }
+    
+    await AsyncStorage.setItem("lastAttendanceDate", currentDateString);
 
-        if (
-          todayEntry &&
-          todayEntry.subjects &&
-          todayEntry.subjects.length > 0
-        ) {
-          console.log(
-            `Found ${todayEntry.subjects.length} lectures for ${today}`
-          );
-          // Asynchronously fetch markedStatus for each lecture of the current day
-          const lecturesForToday = await Promise.all(
-            todayEntry.subjects.map(async (subject) => {
-              // Consistent key: DATE_lecture_status_SUBJECTNAME_STARTTIME
-              const lectureStatusKey = `${currentDateString}_lecture_status_${subject.name}_${subject.startTime}`;
-              const markedStatus = await AsyncStorage.getItem(lectureStatusKey);
-              // console.log(`Status for ${subject.name} at ${subject.startTime} (Key: ${lectureStatusKey}): ${markedStatus}`);
-              return {
-                ...subject,
-                day: today, // Ensure 'day' property is present, it's used in handleMarkAttendance
-                markedStatus: markedStatus || null, // Load status or default to null if not found
-              };
-            })
-          );
-          setLectures(lecturesForToday);
-          setHasTimetable(true);
-          // console.log("Processed lectures for today with statuses:", lecturesForToday);
-        } else {
-          console.log(
-            `No lectures found for ${today} in timetable or timetable structure issue.`
-          );
-          setLectures([]);
-          setHasTimetable(false);
-        }
+    console.log("timetableData loaded in loadTodayLectures:", timetableData ? "Yes" : "No");
+    if (timetableData) {
+      const timetable = JSON.parse(timetableData);
+      const today = getToday();
+      const todayEntry = timetable.days?.find((d) => d.day === today);
+
+      if (todayEntry && todayEntry.subjects && todayEntry.subjects.length > 0) {
+        console.log(`Found ${todayEntry.subjects.length} lectures for ${today}`);
+        
+        // Asynchronously fetch markedStatus for each lecture of the current day
+        const lecturesForToday = await Promise.all(
+          todayEntry.subjects.map(async (subject) => {
+            const lectureStatusKey = `${currentDateString}_lecture_status_${subject.name}_${subject.startTime}`;
+            const markedStatus = await AsyncStorage.getItem(lectureStatusKey);
+            return {
+              ...subject,
+              day: today,
+              markedStatus: markedStatus || null,
+            };
+          })
+        );
+        
+        // Sort lectures by start time
+        const sortedLectures = lecturesForToday.sort((a, b) => {
+          // Convert "HH:MM" strings to comparable values
+          const [aHours, aMinutes] = a.startTime.split(':').map(Number);
+          const [bHours, bMinutes] = b.startTime.split(':').map(Number);
+          
+          // Compare hours first
+          if (aHours !== bHours) {
+            return aHours - bHours;
+          }
+          // If hours are equal, compare minutes
+          return aMinutes - bMinutes;
+        });
+        
+        setLectures(sortedLectures);
+        setHasTimetable(true);
       } else {
-        console.log("No timetable data found in AsyncStorage.");
+        console.log(`No lectures found for ${today} in timetable or timetable structure issue.`);
         setLectures([]);
         setHasTimetable(false);
       }
-    } catch (error) {
+    } else {
+      console.log("No timetable data found in AsyncStorage.");
       setLectures([]);
       setHasTimetable(false);
-      console.error("Error in loadTodayLectures:", error);
-      Alert.alert(
-        "Error",
-        "Failed to load lecture data. Please check console for details."
-      );
     }
-  };
+  } catch (error) {
+    setLectures([]);
+    setHasTimetable(false);
+    console.error("Error in loadTodayLectures:", error);
+    Alert.alert("Error", "Failed to load lecture data. Please check console for details.");
+  }
+};
+
 
   const getInitials = (nameString) => {
     if (!nameString) return "";

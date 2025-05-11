@@ -8,7 +8,7 @@ import {
   TextInput,
   Alert,
   Platform,
-  Animated,
+  ActivityIndicator,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
@@ -16,6 +16,8 @@ import uuid from "react-native-uuid";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { getFirestore, doc, updateDoc, setDoc } from "firebase/firestore";
 
 const WEEK_DAYS = [
   "Monday",
@@ -50,17 +52,75 @@ export default function Timetable() {
     totalClasses: 0,
     attendedClasses: 0,
   });
+  const [showStartTimePicker, setShowStartTimePicker] = useState(false);
+  const [showEndTimePicker, setShowEndTimePicker] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     loadTimetable();
   }, []);
 
   const loadTimetable = async () => {
-    const data = await AsyncStorage.getItem("timetable");
-    if (data) {
-      setTimetable(JSON.parse(data).days);
-    } else {
+    try {
+      // First try to get data from AsyncStorage (prioritize local data)
+      const data = await AsyncStorage.getItem("timetable");
+
+      if (data) {
+        // If data exists in AsyncStorage, use it
+        setTimetable(JSON.parse(data).days);
+      } else {
+        // If no data in AsyncStorage, try Firebase
+        const useruid = await AsyncStorage.getItem("userToken"); // Assuming you store user ID here
+
+        if (useruid) {
+          const db = getFirestore();
+          const docRef = doc(db, "users", useruid);
+          const docSnap = await getDoc(docRef);
+
+          if (docSnap.exists() && docSnap.data().timetable) {
+            // If Firebase has data, use it and save to AsyncStorage for future use
+            const firebaseData = docSnap.data().timetable;
+            setTimetable(firebaseData.days);
+
+            // Save to AsyncStorage to avoid Firebase queries next time
+            await AsyncStorage.setItem(
+              "timetable",
+              JSON.stringify(firebaseData)
+            );
+          } else {
+            // If neither source has data, initialize empty structure
+            setTimetable(WEEK_DAYS.map((day) => ({ day, subjects: [] })));
+          }
+        } else {
+          // If no user ID available, use default empty structure
+          setTimetable(WEEK_DAYS.map((day) => ({ day, subjects: [] })));
+        }
+      }
+    } catch (error) {
+      console.error("Error loading timetable:", error);
+      // Fallback to empty structure on any errors
       setTimetable(WEEK_DAYS.map((day) => ({ day, subjects: [] })));
+    }
+  };
+
+  const handleStartTimeChange = (event, selectedTime) => {
+    setShowStartTimePicker(Platform.OS === "ios");
+    if (selectedTime) {
+      const hours = selectedTime.getHours().toString().padStart(2, "0");
+      const minutes = selectedTime.getMinutes().toString().padStart(2, "0");
+      const timeString = `${hours}:${minutes}`;
+      setNewSubject((s) => ({ ...s, startTime: timeString }));
+    }
+  };
+
+  const handleEndTimeChange = (event, selectedTime) => {
+    setShowEndTimePicker(Platform.OS === "ios");
+    if (selectedTime) {
+      const hours = selectedTime.getHours().toString().padStart(2, "0");
+      const minutes = selectedTime.getMinutes().toString().padStart(2, "0");
+      const timeString = `${hours}:${minutes}`;
+      setNewSubject((s) => ({ ...s, endTime: timeString }));
     }
   };
 
@@ -94,56 +154,106 @@ export default function Timetable() {
     return "book";
   };
 
-  const saveTimetable = async (updatedTimetable) => {
+  // Update local state without saving to AsyncStorage
+  const updateTimetableLocally = (updatedTimetable) => {
     setTimetable(updatedTimetable);
-    await AsyncStorage.setItem(
-      "timetable",
-      JSON.stringify({ days: updatedTimetable })
-    );
+    setHasUnsavedChanges(true);
+  };
 
-    // Load existing subjects from AsyncStorage
-    let existingSubjectObjects = [];
-    const existingSubjectsString = await AsyncStorage.getItem("subjects");
-    if (existingSubjectsString) {
-      try {
-        existingSubjectObjects = JSON.parse(existingSubjectsString);
-      } catch (e) {
-        console.error("Failed to parse existing subjects:", e);
-        existingSubjectObjects = []; // Fallback to empty array on parse error
+  // Save all changes to AsyncStorage at once
+  const saveToStorage = async () => {
+    setIsSaving(true);
+    // const data = await AsyncStorage.getItem("timetable");
+    // console.log("Loaded timetable data:", data);
+    // const username = await AsyncStorage.getItem("userName");
+    // console.log("Username:", username);
+    // const useruid = await AsyncStorage.getItem("userToken");
+    // console.log("User ID:", useruid);
+
+    try {
+      // Save timetable data
+
+      const useruid = await AsyncStorage.getItem("userToken");
+      console.log("User ID:", useruid);
+
+      if (!useruid) {
+        throw new Error("User ID not found in AsyncStorage");
       }
-    }
+      await AsyncStorage.setItem(
+        "timetable",
+        JSON.stringify({ days: timetable })
+      );
 
-    const existingSubjectNames = new Set(existingSubjectObjects.map(s => s.name));
-    const newSubjectObjectsFromThisUpdate = [];
-    const processedNamesInThisUpdate = new Set(); // To handle duplicates within the same timetable update
-
-    updatedTimetable.forEach(day => {
-      day.subjects.forEach(subject => {
-        if (subject.name) {
-          const subjectName = subject.name.trim();
-          // Add to subjects array only if it's a new name (not in existingSubjectNames 
-          // AND not already processed in this current update batch)
-          if (subjectName && !existingSubjectNames.has(subjectName) && !processedNamesInThisUpdate.has(subjectName)) {
-            const newSubjectObj = {
-              id: uuid.v4(), 
-              name: subjectName,
-              topics: [], 
-              color: getRandomGradient(),
-              icon: getSubjectIcon(subjectName.toLowerCase()),
-            };
-            newSubjectObjectsFromThisUpdate.push(newSubjectObj);
-            processedNamesInThisUpdate.add(subjectName); // Mark as processed for this update cycle
-          }
+      // Process subjects
+      let existingSubjectObjects = [];
+      const existingSubjectsString = await AsyncStorage.getItem("subjects");
+      if (existingSubjectsString) {
+        try {
+          existingSubjectObjects = JSON.parse(existingSubjectsString);
+        } catch (e) {
+          console.error("Failed to parse existing subjects:", e);
+          existingSubjectObjects = [];
         }
+      }
+
+      const existingSubjectNames = new Set(
+        existingSubjectObjects.map((s) => s.name)
+      );
+      const newSubjectObjectsFromThisUpdate = [];
+      const processedNamesInThisUpdate = new Set();
+
+      timetable.forEach((day) => {
+        day.subjects.forEach((subject) => {
+          if (subject.name) {
+            const subjectName = subject.name.trim();
+            if (
+              subjectName &&
+              !existingSubjectNames.has(subjectName) &&
+              !processedNamesInThisUpdate.has(subjectName)
+            ) {
+              const newSubjectObj = {
+                id: uuid.v4(),
+                name: subjectName,
+                topics: [],
+                color: getRandomGradient(),
+                icon: getSubjectIcon(subjectName.toLowerCase()),
+              };
+              newSubjectObjectsFromThisUpdate.push(newSubjectObj);
+              processedNamesInThisUpdate.add(subjectName);
+            }
+          }
+        });
       });
-    });
 
-    // Combine existing subjects with any truly new subjects from this update
-    const finalSubjectObjects = [...existingSubjectObjects, ...newSubjectObjectsFromThisUpdate];
+      const finalSubjectObjects = [
+        ...existingSubjectObjects,
+        ...newSubjectObjectsFromThisUpdate,
+      ];
 
-    await AsyncStorage.setItem("subjects", JSON.stringify(finalSubjectObjects));
-    console.log("Final subject objects saved to AsyncStorage:", finalSubjectObjects);
-  };    
+      await AsyncStorage.setItem(
+        "subjects",
+        JSON.stringify(finalSubjectObjects)
+      );
+
+      // Show success feedback
+      const db = getFirestore();
+      const userDocRef = doc(db, "users", useruid);
+
+      // Update the user document with timetable data
+      await updateDoc(userDocRef, {
+        timetable: { days: timetable },
+      });
+
+      // Show success feedback
+      Alert.alert("Success", "Your timetable has been saved sucessfully");
+      setHasUnsavedChanges(false);
+    } catch (error) {
+      console.error("Error saving data:", error);
+      Alert.alert("Error", "Failed to save your timetable. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleAddSubject = (dayIdx) => {
     if (
@@ -159,7 +269,7 @@ export default function Timetable() {
       ...newSubject,
       id: uuid.v4(),
     });
-    saveTimetable(updated);
+    updateTimetableLocally(updated); // Only update locally
     setNewSubject({
       name: "",
       professor: "",
@@ -169,8 +279,6 @@ export default function Timetable() {
       attendedClasses: 0,
     });
   };
-  
-  
 
   const handleDeleteSubject = (dayIdx, subjectId) => {
     Alert.alert(
@@ -186,7 +294,7 @@ export default function Timetable() {
             updated[dayIdx].subjects = updated[dayIdx].subjects.filter(
               (s) => s.id !== subjectId
             );
-            saveTimetable(updated);
+            updateTimetableLocally(updated); // Only update locally
           },
         },
       ]
@@ -233,9 +341,43 @@ export default function Timetable() {
     );
   };
 
+  // This will render at the end of our FlatList as footer
+  const renderSaveButton = () => {
+    if (!hasUnsavedChanges) return null;
+
+    return (
+      <View style={styles.saveButtonSection}>
+        <TouchableOpacity
+          style={styles.saveButton}
+          onPress={saveToStorage}
+          disabled={isSaving}
+        >
+          <LinearGradient
+            colors={["#4cc9f0", "#3a0ca3"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.saveBtnGradient}
+          >
+            {isSaving ? (
+              <View style={styles.savingContainer}>
+                <ActivityIndicator color="#fff" size="small" />
+                <Text style={styles.saveBtnText}>Saving changes...</Text>
+              </View>
+            ) : (
+              <>
+                <Ionicons name="save-outline" size={22} color="#fff" />
+                <Text style={styles.saveBtnText}>Save All Changes</Text>
+              </>
+            )}
+          </LinearGradient>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
   return (
     <View style={styles.container}>
-      <StatusBar style="light" backgroundColor="#121212"/>
+      <StatusBar style="light" backgroundColor="#121212" />
       <LinearGradient
         colors={["#121212", "#121212"]}
         style={styles.gradientBackground}
@@ -254,6 +396,7 @@ export default function Timetable() {
           data={timetable}
           keyExtractor={(item) => item.day}
           contentContainerStyle={styles.listContainer}
+          ListFooterComponent={renderSaveButton}
           renderItem={({ item: day, index: dayIdx }) => {
             const dayColors = DAY_THEMES[day.day] || ["#4361ee", "#3a0ca3"];
 
@@ -330,15 +473,27 @@ export default function Timetable() {
                       <View style={styles.timeInputRow}>
                         <View style={styles.timeInputContainer}>
                           <Text style={styles.timeInputLabel}>Start</Text>
-                          <TextInput
+                          <TouchableOpacity
+                            onPress={() => setShowStartTimePicker(true)}
                             style={styles.timeInput}
-                            placeholder="09:00"
-                            placeholderTextColor="#888"
-                            value={newSubject.startTime}
-                            onChangeText={(text) =>
-                              setNewSubject((s) => ({ ...s, startTime: text }))
-                            }
-                          />
+                          >
+                            <Text
+                              style={{
+                                color: newSubject.startTime ? "#fff" : "#888",
+                              }}
+                            >
+                              {newSubject.startTime || "09:00"}
+                            </Text>
+                          </TouchableOpacity>
+                          {showStartTimePicker && (
+                            <DateTimePicker
+                              value={new Date()}
+                              mode="time"
+                              is24Hour={true}
+                              display="default"
+                              onChange={handleStartTimeChange}
+                            />
+                          )}
                         </View>
 
                         <View style={styles.timeSeparator}>
@@ -351,15 +506,27 @@ export default function Timetable() {
 
                         <View style={styles.timeInputContainer}>
                           <Text style={styles.timeInputLabel}>End</Text>
-                          <TextInput
+                          <TouchableOpacity
+                            onPress={() => setShowEndTimePicker(true)}
                             style={styles.timeInput}
-                            placeholder="10:00"
-                            placeholderTextColor="#888"
-                            value={newSubject.endTime}
-                            onChangeText={(text) =>
-                              setNewSubject((s) => ({ ...s, endTime: text }))
-                            }
-                          />
+                          >
+                            <Text
+                              style={{
+                                color: newSubject.endTime ? "#fff" : "#888",
+                              }}
+                            >
+                              {newSubject.endTime || "10:00"}
+                            </Text>
+                          </TouchableOpacity>
+                          {showEndTimePicker && (
+                            <DateTimePicker
+                              value={new Date()}
+                              mode="time"
+                              is24Hour={true}
+                              display="default"
+                              onChange={handleEndTimeChange}
+                            />
+                          )}
                         </View>
                       </View>
 
@@ -404,14 +571,6 @@ const styles = StyleSheet.create({
     marginBottom: 2,
     marginTop: 40,
     paddingVertical: 12,
-    // backgroundColor: "black",
-    // borderBottomLeftRadius: 12,
-    // borderBottomRightRadius: 12,
-    // elevation: 4,
-    // shadowColor: "#000",
-    // shadowOffset: { width: 0, height: 4 },
-    // shadowOpacity: 0.2,
-    // shadowRadius: 8,
   },
   backButton: {
     marginRight: 15,
@@ -429,7 +588,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   listContainer: {
-    paddingBottom: 80,
+    paddingBottom: 30,
     paddingHorizontal: 12,
   },
   daySection: {
@@ -611,6 +770,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#333",
     fontSize: 16,
+    justifyContent: "center",
   },
   timeSeparator: {
     width: 40,
@@ -632,5 +792,44 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 16,
     marginLeft: 8,
+  },
+  // New styles for save button section at the bottom
+  saveButtonSection: {
+    marginTop: 20,
+    marginBottom: 10,
+    borderRadius: 12,
+    overflow: "hidden",
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 5,
+      },
+      android: {
+        elevation: 5,
+      },
+    }),
+  },
+  saveButton: {
+    borderRadius: 12,
+    overflow: "hidden",
+  },
+  saveBtnGradient: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 16,
+  },
+  saveBtnText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 18,
+    marginLeft: 10,
+  },
+  savingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

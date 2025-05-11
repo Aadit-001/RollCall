@@ -384,9 +384,11 @@ Attendance will update on the Attendance Screen.`
                 <Text style={styles.addTimetableButtonText}>Add Timetable</Text>
               </TouchableOpacity> */}
             </View>
+            
           )
         }
         contentContainerStyle={{ width: "95%", alignSelf: "center" }}
+        ListFooterComponent={<View style={styles.scrollContent} />}
         style={{ flex: 1 }}
       />
       {/* Logout Button */}
@@ -948,6 +950,13 @@ const styles = StyleSheet.create({
     height: 36, // Adjusted size
     alignItems: "center",
     justifyContent: "center",
+  },
+  scrollContent: {
+    paddingBottom: 32,
+    flex: 1,
+    backgroundColor: "#121212",
+    paddingTop: 56,
+    paddingHorizontal: 8,
   },
   // Removed unused styles: scrolle, header, addTTBtn, addTTBtnText, bottomNav, navIcon, attendanceContainer, headerTitle, headerText
   // The following styles seem to be remnants or duplicates and are not directly used by the main content structure visible:

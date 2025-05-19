@@ -4,8 +4,10 @@ import {
   View,
   TouchableOpacity,
   SafeAreaView,
+  AppState,
 } from "react-native";
 import React, { useState, useCallback, useEffect } from "react";
+import notifee, { EventType } from "@notifee/react-native";
 import { FlatList, Pressable } from "react-native-gesture-handler";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -56,11 +58,126 @@ const Home = () => {
     setTodayy(todayDate.toString());
     (async () => {
       await loadName();
-      await initNotifications;
+      await initNotifications();
       await loadTimetable();
     })();
   }, []);
 
+  const getCurrentDateString = () => {
+    const date = new Date();
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    const day = date.getDate().toString().padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+  useEffect(() => {
+    const unsubscribe = notifee.onForegroundEvent(async ({ type, detail }) => {
+      const { notification, pressAction } = detail;
+
+      // Handle attendance marking for Yes/No actions
+      if (type === EventType.ACTION_PRESS && notification?.data) {
+        try {
+          const { lectureName, lectureStartTime, lectureDay } =
+            notification.data;
+          const isPresent = pressAction.id === "yes";
+          const currentDateString = getCurrentDateString();
+
+          console.log(
+            `Processing ${isPresent ? "Present" : "Absent"} for ${lectureName}`
+          );
+
+          // Check if attendance has already been marked for this lecture
+          const lectureStatusKey = `${currentDateString}_lecture_status_${lectureName}_${lectureStartTime}`;
+          const existingStatus = await AsyncStorage.getItem(lectureStatusKey);
+
+          if (existingStatus) {
+            console.log(
+              `Attendance already marked for ${lectureName} as ${existingStatus}`
+            );
+            await notifee.cancelNotification(notification.id);
+
+            // Still refresh UI even if already marked
+            loadTodayLectures();
+            return;
+          }
+
+          // Save the attendance status
+          const newMarkedStatus = isPresent ? "present" : "absent";
+          await AsyncStorage.setItem(lectureStatusKey, newMarkedStatus);
+
+          // Update the timetable attendance counts
+          const timetableString = await AsyncStorage.getItem("timetable");
+          if (timetableString) {
+            let timetable = JSON.parse(timetableString);
+            let subjectUpdated = false;
+
+            timetable.days = timetable.days.map((dayObject) => {
+              if (dayObject.day === lectureDay) {
+                dayObject.subjects = dayObject.subjects.map((subject) => {
+                  if (
+                    subject.name === lectureName &&
+                    subject.startTime === lectureStartTime
+                  ) {
+                    if (isPresent) {
+                      subject.attendedClasses =
+                        (subject.attendedClasses || 0) + 1;
+                    }
+                    subject.totalClasses = (subject.totalClasses || 0) + 1;
+                    subjectUpdated = true;
+                    console.log(
+                      `Updated timetable counts for ${subject.name} on ${lectureDay}: Attended ${subject.attendedClasses}, Total ${subject.totalClasses}`
+                    );
+                  }
+                  return subject;
+                });
+              }
+              return dayObject;
+            });
+
+            if (subjectUpdated) {
+              await AsyncStorage.setItem(
+                "timetable",
+                JSON.stringify(timetable)
+              );
+              console.log(
+                `Timetable updated for ${lectureName} at ${lectureStartTime}`
+              );
+
+              // Show confirmation toast or alert
+              Alert.alert(
+                "Attendance Marked",
+                `${lectureName} marked as ${isPresent ? "Present" : "Absent"}`
+              );
+            }
+          }
+
+          // Cancel the notification once handled
+          await notifee.cancelNotification(notification.id);
+
+          // Refresh UI after updating attendance
+          loadTodayLectures();
+        } catch (error) {
+          console.error(
+            "Error handling foreground notification response:",
+            error
+          );
+        }
+      }
+    });
+
+    // Check for app state changes (background to foreground)
+    const subscription = AppState.addEventListener("change", (nextAppState) => {
+      if (nextAppState === "active") {
+        // App came back to foreground - refresh data
+        loadTodayLectures();
+      }
+    });
+
+    return () => {
+      unsubscribe();
+      subscription.remove();
+    };
+  }, []);
   useFocusEffect(
     useCallback(() => {
       const checkAttendancePercentage = async () => {

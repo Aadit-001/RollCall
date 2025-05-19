@@ -26,13 +26,15 @@ export async function initNotifications() {
       importance: AndroidImportance.HIGH,
     });
   }
+
   if (Platform.OS === "ios") {
     await notifee.setNotificationCategories([
       {
         id: "ROLLCALL",
         actions: [
-          { id: "yes", title: "Yes", options: { foreground: false } },
-          { id: "no", title: "No", options: { foreground: false } },
+          // Modified to open app in foreground
+          { id: "yes", title: "Yes", options: { foreground: true } },
+          { id: "no", title: "No", options: { foreground: true } },
         ],
       },
     ]);
@@ -111,94 +113,8 @@ export async function initNotifications() {
     }
   });
 
-  // Handle background action taps
-  notifee.onBackgroundEvent(async ({ type, detail }) => {
-    const { notification, pressAction } = detail;
-    if (type === EventType.ACTION_PRESS && notification?.data) {
-      try {
-        await AsyncStorage.setItem(
-          "backgroundEventTriggered",
-          JSON.stringify({
-            time: new Date().toISOString(),
-            action: pressAction.id,
-            notificationId: notification.id,
-          })
-        );
-
-        const { lectureName, lectureStartTime, lectureDay } = notification.data;
-        const isPresent = pressAction.id === "yes";
-        const currentDateString = getCurrentDateString();
-
-        // Check if attendance has already been marked for this lecture
-        const lectureStatusKey = `${currentDateString}_lecture_status_${lectureName}_${lectureStartTime}`;
-        const existingStatus = await AsyncStorage.getItem(lectureStatusKey);
-
-        if (existingStatus) {
-          console.log(
-            `Attendance already marked for ${lectureName} as ${existingStatus}`
-          );
-          await notifee.cancelNotification(notification.id);
-          return;
-        }
-
-        // Save the attendance status
-        const newMarkedStatus = isPresent ? "present" : "absent";
-        await AsyncStorage.setItem(lectureStatusKey, newMarkedStatus);
-
-        // Update the timetable attendance counts
-        const timetableString = await AsyncStorage.getItem("timetable");
-        if (timetableString) {
-          let timetable = JSON.parse(timetableString);
-          let subjectUpdated = false;
-
-          timetable.days = timetable.days.map((dayObject) => {
-            if (dayObject.day === lectureDay) {
-              dayObject.subjects = dayObject.subjects.map((subject) => {
-                if (
-                  subject.name === lectureName &&
-                  subject.startTime === lectureStartTime
-                ) {
-                  if (isPresent) {
-                    subject.attendedClasses =
-                      (subject.attendedClasses || 0) + 1;
-                  }
-                  subject.totalClasses = (subject.totalClasses || 0) + 1;
-                  subjectUpdated = true;
-                  console.log(
-                    `Updated timetable counts for ${subject.name} on ${lectureDay}: Attended ${subject.attendedClasses}, Total ${subject.totalClasses}`
-                  );
-                }
-                return subject;
-              });
-            }
-            return dayObject;
-          });
-
-          if (subjectUpdated) {
-            await AsyncStorage.setItem("timetable", JSON.stringify(timetable));
-            console.log(
-              `Timetable updated for ${lectureName} at ${lectureStartTime}`
-            );
-          }
-        }
-
-        // Cancel the notification once handled
-        await notifee.cancelNotification(notification.id);
-      } catch (error) {
-        await AsyncStorage.setItem(
-          "backgroundErrorLog",
-          JSON.stringify({
-            error: error.message,
-            time: new Date().toISOString(),
-          })
-        );
-        console.error(
-          "Error handling background notification response:",
-          error
-        );
-      }
-    }
-  });
+  // NOTE: onBackgroundEvent is now registered in app/_layout.js
+  // DO NOT register it here to avoid duplicate handlers
 }
 
 // Helper: Calculate the next occurrence of a weekday and time
@@ -258,12 +174,30 @@ export async function scheduleWeeklyLectures(lectures) {
         body: "Tap Yes / No to mark attendance",
         android: {
           channelId: "rollcall",
+          pressAction: {
+            id: "default",
+            launchActivity: "default",
+          },
           actions: [
-            { title: "Yes", pressAction: { id: "yes" } },
-            { title: "No", pressAction: { id: "no" } },
+            {
+              title: "Yes",
+              pressAction: {
+                id: "yes",
+                launchActivity: "default", // Force app to open
+              },
+            },
+            {
+              title: "No",
+              pressAction: {
+                id: "no",
+                launchActivity: "default", // Force app to open
+              },
+            },
           ],
         },
-        ios: { categoryId: "ROLLCALL" },
+        ios: {
+          categoryId: "ROLLCALL",
+        },
         data: {
           lectureName: String(lectureName),
           lectureStartTime: String(lec.startTime || ""),

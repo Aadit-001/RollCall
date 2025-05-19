@@ -145,10 +145,7 @@ async function markAttendance(
       timetable.days = timetable.days.map((dayObject) => {
         if (dayObject.day === lectureDay) {
           dayObject.subjects = dayObject.subjects.map((subject) => {
-            if (
-              subject.name === lectureName &&
-              subject.startTime === lectureStartTime
-            ) {
+            if (subject.name === lectureName) {
               if (isPresent) {
                 subject.attendedClasses = (subject.attendedClasses || 0) + 1;
               }

@@ -114,10 +114,7 @@ const Home = () => {
             timetable.days = timetable.days.map((dayObject) => {
               if (dayObject.day === lectureDay) {
                 dayObject.subjects = dayObject.subjects.map((subject) => {
-                  if (
-                    subject.name === lectureName &&
-                    subject.startTime === lectureStartTime
-                  ) {
+                  if (subject.name === lectureName) {
                     if (isPresent) {
                       subject.attendedClasses =
                         (subject.attendedClasses || 0) + 1;
@@ -175,6 +172,135 @@ const Home = () => {
 
     return () => {
       unsubscribe();
+      subscription.remove();
+    };
+  }, []);
+
+  useEffect(() => {
+    // Check for notification data when app starts or resumes
+    const handleInitialNotification = async () => {
+      try {
+        // This gets notification data that opened the app
+        const initialNotification = await notifee.getInitialNotification();
+
+        if (initialNotification) {
+          const { notification, pressAction } = initialNotification;
+          console.log(
+            "App opened from recents by notification:",
+            pressAction.id
+          );
+
+          // Process yes/no actions
+          if (
+            (pressAction?.id === "yes" || pressAction?.id === "no") &&
+            notification?.data
+          ) {
+            const isPresent = pressAction.id === "yes";
+            const { lectureName, lectureStartTime, lectureDay } =
+              notification.data;
+
+            // Mark attendance
+            await markAttendanceFromNotification(
+              lectureName,
+              lectureStartTime,
+              lectureDay,
+              isPresent
+            );
+
+            // Cancel the notification since it's been handled
+            await notifee.cancelNotification(notification.id);
+          }
+        }
+      } catch (error) {
+        console.error("Error handling initial notification:", error);
+      }
+    };
+
+    // Function to mark attendance from notification
+    const markAttendanceFromNotification = async (
+      lectureName,
+      lectureStartTime,
+      lectureDay,
+      isPresent
+    ) => {
+      try {
+        const currentDateString = getCurrentDateString();
+
+        // Check if already marked
+        const lectureStatusKey = `${currentDateString}_lecture_status_${lectureName}_${lectureStartTime}`;
+        const existingStatus = await AsyncStorage.getItem(lectureStatusKey);
+
+        if (existingStatus) {
+          console.log(
+            `Attendance already marked for ${lectureName} as ${existingStatus}`
+          );
+          Alert.alert(
+            "Already Marked",
+            `Attendance for ${lectureName} was already marked as ${existingStatus}.`
+          );
+          return;
+        }
+
+        // Save attendance status
+        const newMarkedStatus = isPresent ? "present" : "absent";
+        await AsyncStorage.setItem(lectureStatusKey, newMarkedStatus);
+
+        // Update timetable counts
+        const timetableString = await AsyncStorage.getItem("timetable");
+        if (timetableString) {
+          let timetable = JSON.parse(timetableString);
+          let subjectUpdated = false;
+
+          timetable.days = timetable.days.map((dayObject) => {
+            if (dayObject.day === lectureDay) {
+              dayObject.subjects = dayObject.subjects.map((subject) => {
+                if (
+                  subject.name === lectureName &&
+                  subject.startTime === lectureStartTime
+                ) {
+                  if (isPresent) {
+                    subject.attendedClasses =
+                      (subject.attendedClasses || 0) + 1;
+                  }
+                  subject.totalClasses = (subject.totalClasses || 0) + 1;
+                  subjectUpdated = true;
+                }
+                return subject;
+              });
+            }
+            return dayObject;
+          });
+
+          if (subjectUpdated) {
+            await AsyncStorage.setItem("timetable", JSON.stringify(timetable));
+            Alert.alert(
+              "Attendance Marked",
+              `${lectureName} marked as ${isPresent ? "Present" : "Absent"}`
+            );
+
+            // Refresh UI
+            loadTodayLectures();
+          }
+        }
+      } catch (error) {
+        console.error("Error marking attendance from notification:", error);
+      }
+    };
+
+    // Check for initial notifications on mount
+    handleInitialNotification();
+
+    // Also listen to app state changes to check when app comes from background
+    const subscription = AppState.addEventListener("change", (nextAppState) => {
+      if (nextAppState === "active") {
+        // App came from background to active
+        console.log("App came to foreground, checking for notifications");
+        handleInitialNotification();
+        loadTodayLectures();
+      }
+    });
+
+    return () => {
       subscription.remove();
     };
   }, []);

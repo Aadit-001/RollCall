@@ -1,5 +1,11 @@
-import { StyleSheet, View, Text, TextInput,TouchableOpacity } from "react-native";
-import React, { useState, useEffect, useCallback,useMemo } from "react";
+import {
+  StyleSheet,
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+} from "react-native";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { FlatList } from "react-native-gesture-handler";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -7,11 +13,9 @@ import AttendanceCard from "@/components/AttendanceCard";
 import { StatusBar } from "expo-status-bar";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { useFocusEffect } from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from "@react-navigation/native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
-
-
 
 // const attendanceData = [
 //   {
@@ -20,77 +24,12 @@ import { Platform } from "react-native";
 //     professor: "Prof. Rupali Sawant",
 //     percentage: 100,
 //   },
-//   {
-//     id: "2",
-//     subject: "DBMS",
-//     professor: "Prof. Rupali Sawant",
-//     percentage: 78,
-//   },
-//   {
-//     id: "3",
-//     subject: "DBMS",
-//     professor: "Rupali Sawant",
-//     percentage: 45,
-//   },
-//   {
-//     id: "4",
-//     subject: "DBMS",
-//     professor: "Rupali Sawant",
-//     percentage: 45,
-//   },
-//   {
-//     id: "5",
-//     subject: "DBMS",
-//     professor: "Rupali Sawant",
-//     percentage: 45,
-//   },
-//   {
-//     id: "6",
-//     subject: "DBMS",
-//     professor: "Rupali Sawant",
-//     percentage: 45,
-//   },
-//   {
-//     id: "7",
-//     subject: "DBMS",
-//     professor: "Rupali Sawant",
-//     percentage: 45,
-//   },
-//   {
-//     id: "8",
-//     subject: "DBMS",
-//     professor: "Rupali Sawant",
-//     percentage: 45,
-//   },
-//   {
-//     id: "9",
-//     subject: "DBMS",
-//     professor: "Rupali Sawant",
-//     percentage: 45,
-//   },
-//   {
-//     id: "10",
-//     subject: "DBMS",
-//     professor: "Rupali Sawant",
-//     percentage: 45,
-//   },
-//   {
-//     id: "11",
-//     subject: "DBMS",
-//     professor: "Rupali Sawant",
-//     percentage: 45,
-//   },
-//   {
-//     id: "12",
-//     subject: "DBMS",
-//     professor: "Rupali Sawant",
-//     percentage: 45,
-//   },
 // ];
 
 const Attendance = () => {
   const router = useRouter();
   const [subjectAttendanceData, setSubjectAttendanceData] = useState({});
+  const [timetable, setTimetable] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [attendanceCriteria, setAttendanceCriteria] = useState(75); // Default criteria
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -107,18 +46,20 @@ const Attendance = () => {
           const subjectsData = timetable.days.reduce((acc, day) => {
             // Ensure day and day.subjects are valid
             if (day && Array.isArray(day.subjects)) {
-              day.subjects.forEach(subject => {
-                if (subject && subject.name && !acc[subject.name]) { // Check subject, name, and if not already added
+              day.subjects.forEach((subject) => {
+                if (subject && subject.name && !acc[subject.name]) {
+                  // Check subject, name, and if not already added
                   acc[subject.name] = {
                     professor: subject.professor || "", // Handle missing professor
                     attended: subject.attendedClasses || 0, // Default to 0
-                    total: subject.totalClasses || 0,     // Default to 0
+                    total: subject.totalClasses || 0, // Default to 0
                   };
                 }
               });
             }
             return acc;
           }, {});
+          console.log("Subjects data loaded from timetable:", subjectsData);
           return subjectsData;
         }
       } catch (e) {
@@ -128,26 +69,70 @@ const Attendance = () => {
     }
     return {}; // Return empty if no data
   };
+  const loadTimetable = async () => {
+    try {
+      // First try to get data from AsyncStorage (prioritize local data)
+      const data = await AsyncStorage.getItem("timetable");
+      console.log(data);
 
-  
+      if (data) {
+        // If data exists in AsyncStorage, use it
+        setTimetable(JSON.parse(data).days);
+      } else {
+        // If no data in AsyncStorage, try Firebase
+        const useruid = await AsyncStorage.getItem("userToken"); // Assuming you store user ID here
+        console.log("User ID:", useruid);
+
+        if (useruid) {
+          const db = getFirestore();
+          const docRef = doc(db, "users", useruid);
+          // console.log("Firebase doc ref:", docRef);
+          const docSnap = await getDoc(docRef);
+          // console.log("Firebase data:", docSnap.data());
+
+          if (docSnap.exists() && docSnap.data().timetable) {
+            // If Firebase has data, use it and save to AsyncStorage for future use
+            const firebaseData = docSnap.data().timetable;
+            setTimetable(firebaseData.days);
+
+            // Save to AsyncStorage to avoid Firebase queries next time
+            await AsyncStorage.setItem(
+              "timetable",
+              JSON.stringify(firebaseData)
+            );
+          } else {
+            // If neither source has data, initialize empty structure
+            setTimetable(WEEK_DAYS.map((day) => ({ day, subjects: [] })));
+          }
+        } else {
+          // If no user ID available, use default empty structure
+          setTimetable(WEEK_DAYS.map((day) => ({ day, subjects: [] })));
+        }
+      }
+    } catch (error) {
+      // console.error("Error loading timetable:", error);
+      // Fallback to empty structure on any errors
+      setTimetable(WEEK_DAYS.map((day) => ({ day, subjects: [] })));
+    }
+  };
+
   const fetchAllData = useCallback(async () => {
     setIsLoading(true);
     try {
       const loadedData = await loadAttendanceDataFromTimetable();
       setSubjectAttendanceData(loadedData);
 
-      const criteriaStr = await AsyncStorage.getItem('percentage');
+      const criteriaStr = await AsyncStorage.getItem("percentage");
       if (criteriaStr) {
         setAttendanceCriteria(parseInt(criteriaStr, 10));
       } else {
         setAttendanceCriteria(75); // Default
       }
-
     } catch (error) {
       console.error("Error fetching data for Attendance screen:", error);
     } finally {
       setIsLoading(false);
-      setRefreshTrigger(prev => prev + 1); // Trigger card refresh
+      setRefreshTrigger((prev) => prev + 1); // Trigger card refresh
     }
   }, []);
 
@@ -161,10 +146,10 @@ const Attendance = () => {
   const handleAttendanceChange = async (subjectName, newAttended, newTotal) => {
     const updatedData = {
       ...subjectAttendanceData,
-      [subjectName]: { 
+      [subjectName]: {
         ...subjectAttendanceData[subjectName], // Preserve professor
-        attended: newAttended, 
-        total: newTotal 
+        attended: newAttended,
+        total: newTotal,
       },
     };
     setSubjectAttendanceData(updatedData);
@@ -177,9 +162,9 @@ const Attendance = () => {
         let timetable = JSON.parse(timetableString);
         let subjectUpdated = false;
         if (timetable && timetable.days) {
-          timetable.days = timetable.days.map(dayObject => {
+          timetable.days = timetable.days.map((dayObject) => {
             if (dayObject.subjects) {
-              dayObject.subjects = dayObject.subjects.map(subject => {
+              dayObject.subjects = dayObject.subjects.map((subject) => {
                 if (subject.name === subjectName) {
                   subjectUpdated = true;
                   return {
@@ -196,9 +181,13 @@ const Attendance = () => {
 
           if (subjectUpdated) {
             await AsyncStorage.setItem("timetable", JSON.stringify(timetable));
-            console.log(`Timetable in AsyncStorage updated for ${subjectName}.`);
+            console.log(
+              `Timetable in AsyncStorage updated for ${subjectName}.`
+            );
           } else {
-             console.warn(`Subject ${subjectName} not found in timetable to update counts.`);
+            console.warn(
+              `Subject ${subjectName} not found in timetable to update counts.`
+            );
           }
         }
       }
@@ -215,10 +204,10 @@ const Attendance = () => {
   //     </View>
   //   );
   // }
-  
+
   // Create a flat list from subjectAttendanceData for rendering
   const displayData = useMemo(() => {
-    return Object.keys(subjectAttendanceData).map(name => ({
+    return Object.keys(subjectAttendanceData).map((name) => ({
       subject: name,
       professor: subjectAttendanceData[name].professor,
       attended: subjectAttendanceData[name].attended,
@@ -226,53 +215,71 @@ const Attendance = () => {
     }));
   }, [subjectAttendanceData]);
 
+  // 1. Filter whenever searchText or displayData change
   useEffect(() => {
     if (searchText.trim() === "") {
       setFilteredData(displayData);
     } else {
-      const filtered = displayData.filter(
-        (item) =>
-          item.subject.toLowerCase().includes(searchText.toLowerCase()) ||
-          (item.professor && item.professor.toLowerCase().includes(searchText.toLowerCase()))
+      setFilteredData(
+        displayData.filter(
+          (item) =>
+            item.subject.toLowerCase().includes(searchText.toLowerCase()) ||
+            (item.professor &&
+              item.professor.toLowerCase().includes(searchText.toLowerCase()))
+        )
       );
-      setFilteredData(filtered);
     }
   }, [searchText, displayData]);
 
+  // 2. Load timetable once (or when `useruid` changes, etc.)
+  useEffect(() => {
+    async function init() {
+      try {
+        await loadTimetable();
+      } catch (err) {
+        console.error("Failed to load timetable:", err);
+      }
+    }
+    init();
+  }, []); // or [useruid] if you reload per user
 
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
-      <StatusBar style="light" backgroundColor="#121212"/>
-      <View style={styles.headerRow}>
-        <View style={styles.profileGroup}>
-          <MaterialCommunityIcons name="view-agenda" size={28} color="white"/>
-          <Text style={styles.title}>Attendance</Text>
-        </View>
-        {/* <TouchableOpacity onPress={() => router.push("/Notifications")}>
+        <StatusBar style="light" backgroundColor="#121212" />
+        <View style={styles.headerRow}>
+          <View style={styles.profileGroup}>
+            <MaterialCommunityIcons
+              name="view-agenda"
+              size={28}
+              color="white"
+            />
+            <Text style={styles.title}>Attendance</Text>
+          </View>
+          {/* <TouchableOpacity onPress={() => router.push("/Notifications")}>
           <Ionicons name="notifications-outline" size={28} color="#fff" />
         </TouchableOpacity> */}
-      </View>
-      <View style={styles.searchContainer}>
-        <Ionicons
-          name="search"
-          size={20}
-          color="#aaa"
-          style={styles.searchIcon}
-        />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search subjects or professors..."
-          placeholderTextColor="#888"
-          value={searchText}
-          onChangeText={setSearchText}
-        />
-        {searchText.length > 0 && (
-          <TouchableOpacity onPress={() => setSearchText("")}>
-            <Ionicons name="close-circle" size={20} color="#888" />
-          </TouchableOpacity>
-        )}
-      </View>
+        </View>
+        <View style={styles.searchContainer}>
+          <Ionicons
+            name="search"
+            size={20}
+            color="#aaa"
+            style={styles.searchIcon}
+          />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search subjects or professors..."
+            placeholderTextColor="#888"
+            value={searchText}
+            onChangeText={setSearchText}
+          />
+          {searchText.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchText("")}>
+              <Ionicons name="close-circle" size={20} color="#888" />
+            </TouchableOpacity>
+          )}
+        </View>
         <FlatList
           data={filteredData || []}
           keyExtractor={(item) => item.subject}
@@ -293,14 +300,22 @@ const Attendance = () => {
               {searchText.length > 0 ? (
                 <>
                   <Ionicons name="search-outline" size={60} color="#555" />
-                  <Text style={styles.emptyText}>No matching subjects found.</Text>
-                  <Text style={styles.emptySubText}>Try a different search term.</Text>
+                  <Text style={styles.emptyText}>
+                    No matching subjects found.
+                  </Text>
+                  <Text style={styles.emptySubText}>
+                    Try a different search term.
+                  </Text>
                 </>
               ) : (
                 <>
                   <Ionicons name="list-circle-outline" size={60} color="#555" />
-                  <Text style={styles.emptyText}>No subjects found in timetable.</Text>
-                  <Text style={styles.emptySubText}>Add subjects via the Timetable screen.</Text>
+                  <Text style={styles.emptyText}>
+                    No subjects found in timetable.
+                  </Text>
+                  <Text style={styles.emptySubText}>
+                    Add subjects via the Timetable screen.
+                  </Text>
                 </>
               )}
             </View>
@@ -340,7 +355,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.1)",
     borderRadius: 12,
     paddingHorizontal: 12,
-    paddingVertical: Platform.OS === 'ios' ? 10 : 0, // Adjust padding for Android
+    paddingVertical: Platform.OS === "ios" ? 10 : 0, // Adjust padding for Android
     marginHorizontal: 17,
     marginBottom: 15,
     marginTop: 5,
@@ -560,29 +575,28 @@ const styles = StyleSheet.create({
   // },
   emptyContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginTop: 50,
     paddingHorizontal: 20,
   },
   emptyText: {
     fontSize: 18,
-    color: '#aaa',
+    color: "#aaa",
     marginTop: 10,
-    textAlign: 'center',
+    textAlign: "center",
   },
   emptySubText: {
     fontSize: 14,
-    color: '#888',
+    color: "#888",
     marginTop: 5,
-    textAlign: 'center',
+    textAlign: "center",
   },
   listContentContainer: {
     paddingHorizontal: 17,
     paddingBottom: 20, // Ensure space for last card
-    flexGrow: 1 // Ensures ListEmptyComponent can center if list is short
+    flexGrow: 1, // Ensures ListEmptyComponent can center if list is short
   },
   // ... (your existing styles from Attendance.jsx)
   // Ensure you have headerRow, profileGroup, title, container, etc.s
-
 });

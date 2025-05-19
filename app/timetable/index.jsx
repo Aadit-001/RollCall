@@ -18,7 +18,17 @@ import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { getFirestore, doc, updateDoc, setDoc } from "firebase/firestore";
+import {
+  getFirestore,
+  doc,
+  updateDoc,
+  setDoc,
+  getDoc,
+} from "firebase/firestore";
+import {
+  initNotifications,
+  scheduleWeeklyLectures,
+} from "@/services/Notifications/notificationService";
 
 const WEEK_DAYS = [
   "Monday",
@@ -58,14 +68,19 @@ export default function Timetable() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
+  // On mount: init notifications & load data
   useEffect(() => {
-    loadTimetable();
+    (async () => {
+      await initNotifications();
+      await loadTimetable();
+    })();
   }, []);
 
   const loadTimetable = async () => {
     try {
       // First try to get data from AsyncStorage (prioritize local data)
       const data = await AsyncStorage.getItem("timetable");
+      console.log(data);
 
       if (data) {
         // If data exists in AsyncStorage, use it
@@ -73,11 +88,14 @@ export default function Timetable() {
       } else {
         // If no data in AsyncStorage, try Firebase
         const useruid = await AsyncStorage.getItem("userToken"); // Assuming you store user ID here
+        console.log("User ID:", useruid);
 
         if (useruid) {
           const db = getFirestore();
           const docRef = doc(db, "users", useruid);
+          // console.log("Firebase doc ref:", docRef);
           const docSnap = await getDoc(docRef);
+          // console.log("Firebase data:", docSnap.data());
 
           if (docSnap.exists() && docSnap.data().timetable) {
             // If Firebase has data, use it and save to AsyncStorage for future use
@@ -99,7 +117,7 @@ export default function Timetable() {
         }
       }
     } catch (error) {
-      console.error("Error loading timetable:", error);
+      // console.error("Error loading timetable:", error);
       // Fallback to empty structure on any errors
       setTimetable(WEEK_DAYS.map((day) => ({ day, subjects: [] })));
     }
@@ -164,12 +182,12 @@ export default function Timetable() {
   // Save all changes to AsyncStorage at once
   const saveToStorage = async () => {
     setIsSaving(true);
-    // const data = await AsyncStorage.getItem("timetable");
-    // console.log("Loaded timetable data:", data);
-    // const username = await AsyncStorage.getItem("userName");
-    // console.log("Username:", username);
-    // const useruid = await AsyncStorage.getItem("userToken");
-    // console.log("User ID:", useruid);
+    const data = await AsyncStorage.getItem("timetable");
+    console.log("Loaded timetable data:", data);
+    const username = await AsyncStorage.getItem("userName");
+    console.log("Username:", username);
+    const useruid = await AsyncStorage.getItem("userToken");
+    console.log("User ID:", useruid);
 
     try {
       // Save timetable data
@@ -236,6 +254,8 @@ export default function Timetable() {
         JSON.stringify(finalSubjectObjects)
       );
 
+      // console.log("Subjects saved successfully:", finalSubjectObjects);
+
       // Show success feedback
       const db = getFirestore();
       const userDocRef = doc(db, "users", useruid);
@@ -245,8 +265,22 @@ export default function Timetable() {
         timetable: { days: timetable },
       });
 
+      // Flatten lectures and schedule weekly
+      const allLectures = timetable.flatMap((day) =>
+        day.subjects.map((s) => ({
+          id: s.id,
+          title: s.name,
+          day: day.day,
+          startTime: s.startTime,
+        }))
+      );
+      await scheduleWeeklyLectures(allLectures);
+
       // Show success feedback
-      Alert.alert("Success", "Your timetable has been saved sucessfully");
+      Alert.alert(
+        "Success",
+        "Your timetable has been saved sucessfully & weekly reminders set"
+      );
       setHasUnsavedChanges(false);
     } catch (error) {
       console.error("Error saving data:", error);
@@ -377,185 +411,190 @@ export default function Timetable() {
   };
 
   return (
-    <SafeAreaProvider> 
-    <SafeAreaView style={styles.container}>
-      <StatusBar style="light" backgroundColor="#121212"/>
-      <LinearGradient
-        colors={["#121212", "#121212"]}
-        style={styles.gradientBackground}
-      >
-        <View style={styles.headerRow}>
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={styles.backButton}
-          >
-            <Ionicons name="arrow-back" size={26} color="#fff" />
-          </TouchableOpacity>
-          <Text style={styles.header}>My Timetable</Text>
-        </View>
+    <SafeAreaProvider>
+      <SafeAreaView style={styles.container}>
+        <StatusBar style="light" backgroundColor="#121212" />
+        <LinearGradient
+          colors={["#121212", "#121212"]}
+          style={styles.gradientBackground}
+        >
+          <View style={styles.headerRow}>
+            <TouchableOpacity
+              onPress={() => router.back()}
+              style={styles.backButton}
+            >
+              <Ionicons name="arrow-back" size={26} color="#fff" />
+            </TouchableOpacity>
+            <Text style={styles.header}>My Timetable</Text>
+          </View>
 
-        <FlatList
-          data={timetable}
-          keyExtractor={(item) => item.day}
-          contentContainerStyle={styles.listContainer}
-          ListFooterComponent={renderSaveButton}
-          renderItem={({ item: day, index: dayIdx }) => {
-            const dayColors = DAY_THEMES[day.day] || ["#4361ee", "#3a0ca3"];
+          <FlatList
+            data={timetable}
+            keyExtractor={(item) => item.day}
+            contentContainerStyle={styles.listContainer}
+            ListFooterComponent={renderSaveButton}
+            renderItem={({ item: day, index: dayIdx }) => {
+              const dayColors = DAY_THEMES[day.day] || ["#4361ee", "#3a0ca3"];
 
-            return (
-              <View style={styles.daySection}>
-                <LinearGradient
-                  colors={dayColors}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.dayHeaderGradient}
-                >
-                  <View style={styles.dayHeaderRow}>
-                    <Text style={styles.dayHeader}>{day.day}</Text>
-                    <TouchableOpacity
-                      onPress={() =>
-                        setEditDay(editDay === dayIdx ? null : dayIdx)
-                      }
-                      style={styles.dayActionButton}
-                    >
-                      <Ionicons
-                        name={
-                          editDay === dayIdx ? "close-circle" : "add-circle"
-                        }
-                        size={28}
-                        color="#fff"
-                      />
-                    </TouchableOpacity>
-                  </View>
-                </LinearGradient>
-
-                <View style={styles.dayContent}>
-                  {day.subjects.length === 0 ? (
-                    <View style={styles.emptyDayContainer}>
-                      <MaterialIcons name="event-busy" size={40} color="#555" />
-                      <Text style={styles.noSubjectText}>
-                        No classes scheduled
-                      </Text>
-                    </View>
-                  ) : (
-                    day.subjects.map((item, idx) =>
-                      renderSubject({
-                        item,
-                        index: idx,
-                        dayIdx,
-                        dayName: day.day,
-                      })
-                    )
-                  )}
-
-                  {editDay === dayIdx && (
-                    <View style={styles.addForm}>
-                      <Text style={styles.addFormTitle}>Add New Subject</Text>
-
-                      <TextInput
-                        style={styles.input}
-                        placeholder="Subject Name *"
-                        placeholderTextColor="#888"
-                        value={newSubject.name}
-                        onChangeText={(text) =>
-                          setNewSubject((s) => ({ ...s, name: text }))
-                        }
-                      />
-
-                      <TextInput
-                        style={styles.input}
-                        placeholder="Professor (optional)"
-                        placeholderTextColor="#888"
-                        value={newSubject.professor}
-                        onChangeText={(text) =>
-                          setNewSubject((s) => ({ ...s, professor: text }))
-                        }
-                      />
-
-                      <View style={styles.timeInputRow}>
-                        <View style={styles.timeInputContainer}>
-                          <Text style={styles.timeInputLabel}>Start</Text>
-                          <TouchableOpacity
-                            onPress={() => setShowStartTimePicker(true)}
-                            style={styles.timeInput}
-                          >
-                            <Text
-                              style={{
-                                color: newSubject.startTime ? "#fff" : "#888",
-                              }}
-                            >
-                              {newSubject.startTime || "09:00"}
-                            </Text>
-                          </TouchableOpacity>
-                          {showStartTimePicker && (
-                            <DateTimePicker
-                              value={new Date()}
-                              mode="time"
-                              is24Hour={true}
-                              display="default"
-                              onChange={handleStartTimeChange}
-                            />
-                          )}
-                        </View>
-
-                        <View style={styles.timeSeparator}>
-                          <MaterialIcons
-                            name="arrow-forward"
-                            size={20}
-                            color="#666"
-                          />
-                        </View>
-
-                        <View style={styles.timeInputContainer}>
-                          <Text style={styles.timeInputLabel}>End</Text>
-                          <TouchableOpacity
-                            onPress={() => setShowEndTimePicker(true)}
-                            style={styles.timeInput}
-                          >
-                            <Text
-                              style={{
-                                color: newSubject.endTime ? "#fff" : "#888",
-                              }}
-                            >
-                              {newSubject.endTime || "10:00"}
-                            </Text>
-                          </TouchableOpacity>
-                          {showEndTimePicker && (
-                            <DateTimePicker
-                              value={new Date()}
-                              mode="time"
-                              is24Hour={true}
-                              display="default"
-                              onChange={handleEndTimeChange}
-                            />
-                          )}
-                        </View>
-                      </View>
-
+              return (
+                <View style={styles.daySection}>
+                  <LinearGradient
+                    colors={dayColors}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.dayHeaderGradient}
+                  >
+                    <View style={styles.dayHeaderRow}>
+                      <Text style={styles.dayHeader}>{day.day}</Text>
                       <TouchableOpacity
-                        style={styles.addBtn}
-                        onPress={() => handleAddSubject(dayIdx)}
+                        onPress={() =>
+                          setEditDay(editDay === dayIdx ? null : dayIdx)
+                        }
+                        style={styles.dayActionButton}
                       >
-                        <LinearGradient
-                          colors={dayColors}
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 0 }}
-                          style={styles.addBtnGradient}
-                        >
-                          <Ionicons name="add" size={20} color="#fff" />
-                          <Text style={styles.addBtnText}>Add to Schedule</Text>
-                        </LinearGradient>
+                        <Ionicons
+                          name={
+                            editDay === dayIdx ? "close-circle" : "add-circle"
+                          }
+                          size={28}
+                          color="#fff"
+                        />
                       </TouchableOpacity>
                     </View>
-                  )}
+                  </LinearGradient>
+
+                  <View style={styles.dayContent}>
+                    {day.subjects.length === 0 ? (
+                      <View style={styles.emptyDayContainer}>
+                        <MaterialIcons
+                          name="event-busy"
+                          size={40}
+                          color="#555"
+                        />
+                        <Text style={styles.noSubjectText}>
+                          No classes scheduled
+                        </Text>
+                      </View>
+                    ) : (
+                      day.subjects.map((item, idx) =>
+                        renderSubject({
+                          item,
+                          index: idx,
+                          dayIdx,
+                          dayName: day.day,
+                        })
+                      )
+                    )}
+
+                    {editDay === dayIdx && (
+                      <View style={styles.addForm}>
+                        <Text style={styles.addFormTitle}>Add New Subject</Text>
+
+                        <TextInput
+                          style={styles.input}
+                          placeholder="Subject Name *"
+                          placeholderTextColor="#888"
+                          value={newSubject.name}
+                          onChangeText={(text) =>
+                            setNewSubject((s) => ({ ...s, name: text }))
+                          }
+                        />
+
+                        <TextInput
+                          style={styles.input}
+                          placeholder="Professor (optional)"
+                          placeholderTextColor="#888"
+                          value={newSubject.professor}
+                          onChangeText={(text) =>
+                            setNewSubject((s) => ({ ...s, professor: text }))
+                          }
+                        />
+
+                        <View style={styles.timeInputRow}>
+                          <View style={styles.timeInputContainer}>
+                            <Text style={styles.timeInputLabel}>Start</Text>
+                            <TouchableOpacity
+                              onPress={() => setShowStartTimePicker(true)}
+                              style={styles.timeInput}
+                            >
+                              <Text
+                                style={{
+                                  color: newSubject.startTime ? "#fff" : "#888",
+                                }}
+                              >
+                                {newSubject.startTime || "09:00"}
+                              </Text>
+                            </TouchableOpacity>
+                            {showStartTimePicker && (
+                              <DateTimePicker
+                                value={new Date()}
+                                mode="time"
+                                is24Hour={true}
+                                display="default"
+                                onChange={handleStartTimeChange}
+                              />
+                            )}
+                          </View>
+
+                          <View style={styles.timeSeparator}>
+                            <MaterialIcons
+                              name="arrow-forward"
+                              size={20}
+                              color="#666"
+                            />
+                          </View>
+
+                          <View style={styles.timeInputContainer}>
+                            <Text style={styles.timeInputLabel}>End</Text>
+                            <TouchableOpacity
+                              onPress={() => setShowEndTimePicker(true)}
+                              style={styles.timeInput}
+                            >
+                              <Text
+                                style={{
+                                  color: newSubject.endTime ? "#fff" : "#888",
+                                }}
+                              >
+                                {newSubject.endTime || "10:00"}
+                              </Text>
+                            </TouchableOpacity>
+                            {showEndTimePicker && (
+                              <DateTimePicker
+                                value={new Date()}
+                                mode="time"
+                                is24Hour={true}
+                                display="default"
+                                onChange={handleEndTimeChange}
+                              />
+                            )}
+                          </View>
+                        </View>
+
+                        <TouchableOpacity
+                          style={styles.addBtn}
+                          onPress={() => handleAddSubject(dayIdx)}
+                        >
+                          <LinearGradient
+                            colors={dayColors}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            style={styles.addBtnGradient}
+                          >
+                            <Ionicons name="add" size={20} color="#fff" />
+                            <Text style={styles.addBtnText}>
+                              Add to Schedule
+                            </Text>
+                          </LinearGradient>
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </View>
                 </View>
-              </View>
-            );
-          }}
-          
-        />
-      </LinearGradient>
-    </SafeAreaView>
+              );
+            }}
+          />
+        </LinearGradient>
+      </SafeAreaView>
     </SafeAreaProvider>
   );
 }

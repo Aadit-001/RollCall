@@ -33,6 +33,14 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
+      ],
+      [
+        "@evennit/notifee-expo-plugin",
+        {
+          "iosDeploymentTarget": "13.4",
+          "apsEnvMode": "development",
+          "backgroundModes": ["remote-notification"]
+        }
       ]
     ],
     "experiments": {

@@ -14,6 +14,11 @@ import { LinearGradient } from "expo-linear-gradient";
 import AttendancePercentageFinder from "@/components/AttendancePercentageFinder";
 import { StatusBar } from "expo-status-bar";
 import { Alert } from "react-native";
+import { getFirestore, doc, getDoc } from "firebase/firestore";
+import {
+  initNotifications,
+  scheduleWeeklyLectures,
+} from "@/services/Notifications/notificationService";
 
 const getToday = () => {
   const days = [
@@ -36,21 +41,25 @@ const getCurrentDateString = () => {
   return `${year}-${month}-${day}`;
 };
 
-
 const Home = () => {
   const [lectures, setLectures] = useState([]);
   const [hasTimetable, setHasTimetable] = useState(false);
+  const [timetable, setTimetable] = useState([]);
   const [showAttendanceFinder, setShowAttendanceFinder] = useState(false);
   const [name, setName] = useState("");
   const [todayy, setTodayy] = useState("");
   const router = useRouter();
 
-
-  useEffect(()=> {
+  useEffect(() => {
     const todayDate = getToday();
     console.log(todayDate);
     setTodayy(todayDate.toString());
-  },[])
+    (async () => {
+      await loadName();
+      await initNotifications;
+      await loadTimetable();
+    })();
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -64,89 +73,212 @@ const Home = () => {
           console.error("Error checking attendance percentage:", error);
         }
       };
+
+      const refreshData = async () => {
+        try {
+          const timetableString = await AsyncStorage.getItem("timetable");
+          if (timetableString) {
+            const timetable = JSON.parse(timetableString);
+            setTimetable(timetable.days);
+            await loadTodayLectures(); // Refresh today's lectures
+          }
+        } catch (error) {
+          console.error("Error refreshing data:", error);
+        }
+      };
+
       checkAttendancePercentage();
-      loadTodayLectures();
+      refreshData();
     }, [])
   );
 
+  const loadName = async () => {
+    try {
+      // 1) Try to load from cache
+      const cachedName = await AsyncStorage.getItem("userName");
+      if (cachedName) {
+        setName(cachedName);
+        return;
+      }
+
+      // 2) No cached name → get the user ID
+      const userId = await AsyncStorage.getItem("userToken");
+      if (!userId) {
+        console.warn("No userToken in AsyncStorage");
+        return;
+      }
+
+      // 3) Fetch Firestore doc
+      const db = getFirestore();
+      const snap = await getDoc(doc(db, "users", userId));
+      if (!snap.exists()) {
+        console.warn(`No user document for ID ${userId}`);
+        return;
+      }
+
+      console.log("User document data:", snap.data().name);
+
+      // 4) Read & validate the `name` field
+      const nameFromDb = snap.data().name;
+      if (!nameFromDb) {
+        console.warn("User document has no `name` field");
+        return;
+      }
+
+      // 5) Set state and cache it
+      setName(nameFromDb);
+      await AsyncStorage.setItem("userName", nameFromDb);
+    } catch (error) {
+      console.error("Error in loadName:", error);
+    }
+  };
+
+  const loadTimetable = async () => {
+    try {
+      // First try to get data from AsyncStorage (prioritize local data)
+      const data = await AsyncStorage.getItem("timetable");
+      console.log(data);
+
+      if (data) {
+        // If data exists in AsyncStorage, use it
+        setTimetable(JSON.parse(data).days);
+      } else {
+        // If no data in AsyncStorage, try Firebase
+        const useruid = await AsyncStorage.getItem("userToken"); // Assuming you store user ID here
+        console.log("User ID:", useruid);
+
+        if (useruid) {
+          const db = getFirestore();
+          const docRef = doc(db, "users", useruid);
+          // console.log("Firebase doc ref:", docRef);
+          const docSnap = await getDoc(docRef);
+          // console.log("Firebase data:", docSnap.data());
+
+          if (docSnap.exists() && docSnap.data().timetable) {
+            // If Firebase has data, use it and save to AsyncStorage for future use
+            const firebaseData = docSnap.data().timetable;
+            setTimetable(firebaseData.days);
+
+            // Save to AsyncStorage to avoid Firebase queries next time
+            await AsyncStorage.setItem(
+              "timetable",
+              JSON.stringify(firebaseData)
+            );
+          } else {
+            // If neither source has data, initialize empty structure
+            setTimetable(WEEK_DAYS.map((day) => ({ day, subjects: [] })));
+          }
+        } else {
+          // If no user ID available, use default empty structure
+          setTimetable(WEEK_DAYS.map((day) => ({ day, subjects: [] })));
+        }
+      }
+    } catch (error) {
+      // console.error("Error loading timetable:", error);
+      // Fallback to empty structure on any errors
+      setTimetable(WEEK_DAYS.map((day) => ({ day, subjects: [] })));
+    }
+  };
+
   // Load today's lectures from timetable in AsyncStorage
   const loadTodayLectures = async () => {
-  try {
-    const timetableData = await AsyncStorage.getItem("timetable");
-    const currentDateString = getCurrentDateString(); 
-    const lastAttendanceDate = await AsyncStorage.getItem("lastAttendanceDate");
-
-    if (lastAttendanceDate && lastAttendanceDate !== currentDateString) {
-      // Day change handling code (unchanged)
-      console.log(`Day changed from ${lastAttendanceDate} to ${currentDateString}. Clearing old statuses.`);
-      const allKeys = await AsyncStorage.getAllKeys();
-      const keysToRemove = allKeys.filter((key) =>
-        key.startsWith(`${lastAttendanceDate}_lecture_status_`)
+    try {
+      const timetableData = await AsyncStorage.getItem("timetable");
+      const currentDateString = getCurrentDateString();
+      const lastAttendanceDate = await AsyncStorage.getItem(
+        "lastAttendanceDate"
       );
-      if (keysToRemove.length > 0) {
-        await AsyncStorage.multiRemove(keysToRemove);
-        console.log("Cleared old attendance statuses for:", lastAttendanceDate, keysToRemove);
-      }
-    }
-    
-    await AsyncStorage.setItem("lastAttendanceDate", currentDateString);
 
-    console.log("timetableData loaded in loadTodayLectures:", timetableData ? "Yes" : "No");
-    if (timetableData) {
-      const timetable = JSON.parse(timetableData);
-      const today = getToday();
-      const todayEntry = timetable.days?.find((d) => d.day === today);
-
-      if (todayEntry && todayEntry.subjects && todayEntry.subjects.length > 0) {
-        console.log(`Found ${todayEntry.subjects.length} lectures for ${today}`);
-        
-        // Asynchronously fetch markedStatus for each lecture of the current day
-        const lecturesForToday = await Promise.all(
-          todayEntry.subjects.map(async (subject) => {
-            const lectureStatusKey = `${currentDateString}_lecture_status_${subject.name}_${subject.startTime}`;
-            const markedStatus = await AsyncStorage.getItem(lectureStatusKey);
-            return {
-              ...subject,
-              day: today,
-              markedStatus: markedStatus || null,
-            };
-          })
+      if (lastAttendanceDate && lastAttendanceDate !== currentDateString) {
+        // Day change handling code (unchanged)
+        console.log(
+          `Day changed from ${lastAttendanceDate} to ${currentDateString}. Clearing old statuses.`
         );
-        
-        // Sort lectures by start time
-        const sortedLectures = lecturesForToday.sort((a, b) => {
-          // Convert "HH:MM" strings to comparable values
-          const [aHours, aMinutes] = a.startTime.split(':').map(Number);
-          const [bHours, bMinutes] = b.startTime.split(':').map(Number);
-          
-          // Compare hours first
-          if (aHours !== bHours) {
-            return aHours - bHours;
-          }
-          // If hours are equal, compare minutes
-          return aMinutes - bMinutes;
-        });
-        
-        setLectures(sortedLectures);
-        setHasTimetable(true);
+        const allKeys = await AsyncStorage.getAllKeys();
+        const keysToRemove = allKeys.filter((key) =>
+          key.startsWith(`${lastAttendanceDate}_lecture_status_`)
+        );
+        if (keysToRemove.length > 0) {
+          await AsyncStorage.multiRemove(keysToRemove);
+          console.log(
+            "Cleared old attendance statuses for:",
+            lastAttendanceDate,
+            keysToRemove
+          );
+        }
+      }
+
+      await AsyncStorage.setItem("lastAttendanceDate", currentDateString);
+
+      console.log(
+        "timetableData loaded in loadTodayLectures:",
+        timetableData ? "Yes" : "No"
+      );
+      if (timetableData) {
+        const timetable = JSON.parse(timetableData);
+        const today = getToday();
+        const todayEntry = timetable.days?.find((d) => d.day === today);
+
+        if (
+          todayEntry &&
+          todayEntry.subjects &&
+          todayEntry.subjects.length > 0
+        ) {
+          console.log(
+            `Found ${todayEntry.subjects.length} lectures for ${today}`
+          );
+
+          // Asynchronously fetch markedStatus for each lecture of the current day
+          const lecturesForToday = await Promise.all(
+            todayEntry.subjects.map(async (subject) => {
+              const lectureStatusKey = `${currentDateString}_lecture_status_${subject.name}_${subject.startTime}`;
+              const markedStatus = await AsyncStorage.getItem(lectureStatusKey);
+              return {
+                ...subject,
+                day: today,
+                markedStatus: markedStatus || null,
+              };
+            })
+          );
+
+          // Sort lectures by start time
+          const sortedLectures = lecturesForToday.sort((a, b) => {
+            // Convert "HH:MM" strings to comparable values
+            const [aHours, aMinutes] = a.startTime.split(":").map(Number);
+            const [bHours, bMinutes] = b.startTime.split(":").map(Number);
+
+            // Compare hours first
+            if (aHours !== bHours) {
+              return aHours - bHours;
+            }
+            // If hours are equal, compare minutes
+            return aMinutes - bMinutes;
+          });
+
+          setLectures(sortedLectures);
+          setHasTimetable(true);
+        } else {
+          console.log(
+            `No lectures found for ${today} in timetable or timetable structure issue.`
+          );
+          setLectures([]);
+          setHasTimetable(false);
+        }
       } else {
-        console.log(`No lectures found for ${today} in timetable or timetable structure issue.`);
+        console.log("No timetable data found in AsyncStorage.");
         setLectures([]);
         setHasTimetable(false);
       }
-    } else {
-      console.log("No timetable data found in AsyncStorage.");
+    } catch (error) {
       setLectures([]);
       setHasTimetable(false);
+      console.error("Error in loadTodayLectures:", error);
+      Alert.alert(
+        "Error",
+        "Failed to load lecture data. Please check console for details."
+      );
     }
-  } catch (error) {
-    setLectures([]);
-    setHasTimetable(false);
-    console.error("Error in loadTodayLectures:", error);
-    Alert.alert("Error", "Failed to load lecture data. Please check console for details.");
-  }
-};
-
+  };
 
   const getInitials = (nameString) => {
     if (!nameString) return "";
@@ -189,7 +321,7 @@ const Home = () => {
 
       timetable.days = timetable.days.map((dayObject) => {
         if (dayObject.day === lectureItem.day) {
-          dayObject.subjects = dayObject.subjects.map(subject => {
+          dayObject.subjects = dayObject.subjects.map((subject) => {
             if (subject.name === lectureItem.name) {
               // Only update attended/total if they haven't been marked for the day yet OR if you allow re-marking
               // Current logic always increments totalClasses and conditionally attendedClasses
@@ -221,9 +353,7 @@ const Home = () => {
 
         Alert.alert(
           "Success",
-          `${lectureItem.name} marked as ${
-            isPresent ? "Present" : "Absent"
-          }.
+          `${lectureItem.name} marked as ${isPresent ? "Present" : "Absent"}.
 Attendance will update on the Attendance Screen.`
         );
         // Update local state to reflect the change immediately
@@ -295,10 +425,12 @@ Attendance will update on the Attendance Screen.`
           </TouchableOpacity>
           <Text style={styles.title}>{name}</Text>
         </View>
-        <View >
+        <View>
           {/* <Ionicons name="notifications-outline" size={28} color="#fff" /> */}
-            <Text style={styles.headerText}>{todayy}</Text>
-            <Text style={styles.headerTex}>{new Date().toLocaleDateString()}</Text>
+          <Text style={styles.headerText}>{todayy}</Text>
+          <Text style={styles.headerTex}>
+            {new Date().toLocaleDateString()}
+          </Text>
         </View>
       </View>
       <FlatList
@@ -438,7 +570,6 @@ Attendance will update on the Attendance Screen.`
                 <Text style={styles.addTimetableButtonText}>Add Timetable</Text>
               </TouchableOpacity> */}
             </View>
-            
           )
         }
         contentContainerStyle={{ width: "95%", alignSelf: "center" }}
@@ -452,7 +583,6 @@ Attendance will update on the Attendance Screen.`
       >
         <Text style={styles.logoutButtonText}>Logout</Text>
       </TouchableOpacity> */}
-      
 
       {/* <View style={styles.bottomNav} /> */}
     </SafeAreaView>
@@ -461,283 +591,6 @@ Attendance will update on the Attendance Screen.`
 
 export default Home;
 
-// const styles = StyleSheet.create({
-//   container: {
-//     backgroundColor: "#181818",
-//     flex: 1,
-//   },
-//   headerRow: {
-//     flexDirection: "row",
-//     alignItems: "center",
-//     justifyContent: "space-between", // Distributes space
-//     paddingHorizontal: 16, // Added horizontal padding
-//     paddingTop: 10, // Adjusted for status bar and notch
-//     paddingBottom: 10, // Added bottom padding
-//     marginTop: 30, // Adjusted from 48
-//     // marginBottom: 18, // Removed, spacing handled by padding
-//     // marginLeft: 8, // Removed, using paddingHorizontal
-//   },
-//   profileGroup: {
-//     flexDirection: "row",
-//     alignItems: "center",
-//     gap: 8, // Space between profile and name
-//   },
-//   profileTouchable: {
-//     width: 40,
-//     height: 40,
-//     borderRadius: 28,
-//     backgroundColor: "green",
-//     justifyContent: "center",
-//     alignItems: "center",
-//   },
-//   profileIconContainer: {
-//     width: 40,
-//     height: 40,
-//     borderRadius: 28,
-//     backgroundColor: "green",
-//     justifyContent: "center",
-//     alignItems: "center",
-//   },
-//   profileIconText: {
-//     color: "#fff",
-//     fontSize: 24,
-//     fontWeight: "bold",
-//     marginBottom: 3,
-//   },
-//   header: {
-//     color: "#fff",
-//     fontSize: 22,
-//     fontWeight: "bold",
-//     flex: 1,
-//   },
-
-//   headerTitle: {
-//     fontSize: 16,
-//     fontWeight: "bold",
-//     color: "green",
-//   },
-//   title: {
-//     fontSize: 26,
-//     fontWeight: "bold",
-//     color: "white",
-//     marginLeft: 0,
-//   },
-//   logoutButton: {
-//     backgroundColor: "#FF0000",
-//     padding: 15,
-//     borderRadius: 10,
-//     alignItems: "center",
-//     marginTop: 20,
-//     marginHorizontal: 20,
-//     marginBottom: 100,
-//   },
-//   logoutButtonText: {
-//     color: "#FFFFFF",
-//     fontSize: 16,
-//     fontWeight: "bold",
-//   },
-//   headerText: {
-//     color: "#fff",
-//     fontSize: 28,
-//     fontWeight: "bold",
-//   },
-//   topBox: {
-//     borderRadius: 10,
-//     borderWidth: 1,
-//     borderColor: "#3fa4ff",
-//     height: 200,
-//     width: "95%",
-//     padding: 20,
-//     margin: 10,
-//     display: "flex",
-//     flexDirection: "column",
-//     justifyContent: "center",
-//     alignItems: "center",
-//   },
-//   topBoxText: {
-//     color: "#3fa4ff",
-//     fontSize: 22,
-//     fontWeight: "bold",
-//     textAlign: "center",
-//   },
-//   topBoxTextName: {
-//     color: "#fff",
-//     fontSize: 32,
-//     fontWeight: "bold",
-//     letterSpacing: 4,
-//     textAlign: "center",
-//     marginTop: 4,
-//   },
-//   bottomBoxTittle: {
-//     backgroundColor: "transparent",
-//     width: "100%",
-//     height: 40,
-//     display: "flex",
-//     justifyContent: "center",
-//     alignItems: "center",
-//     marginTop: 10,
-//   },
-//   bottomBoxTittleText: {
-//     color: "#fff",
-//     fontSize: 20,
-//     fontWeight: "bold",
-//   },
-//   ttPlaceholderBox: {
-//     backgroundColor: "#222",
-//     borderRadius: 10,
-//     margin: 10,
-//     padding: 16,
-//     width: "95%",
-//     alignSelf: "center",
-//   },
-//   ttPlaceholderText: {
-//     color: "#aaa",
-//     fontSize: 16,
-//     textAlign: "center",
-//   },
-//   lectureCard: {
-//     backgroundColor: "#222",
-//     borderRadius: 10,
-//     flexDirection: "row",
-//     alignItems: "center",
-//     padding: 16,
-//     marginBottom: 12,
-//     marginTop: 6,
-//   },
-//   lectureName: {
-//     color: "#fff",
-//     fontSize: 20,
-//     fontWeight: "bold",
-//   },
-//   profName: {
-//     color: "#ccc",
-//     fontSize: 14,
-//     marginTop: 4,
-//   },
-//   attendanceBtns: {
-//     flexDirection: "row",
-//     alignItems: "center",
-//     marginLeft: 12,
-//   },
-//   attendanceBtnRed: {
-//     backgroundColor: "#e53935",
-//     borderRadius: 8,
-//     padding: 4,
-//     marginRight: 8,
-//   },
-//   attendanceBtnGreen: {
-//     backgroundColor: "#43a047",
-//     borderRadius: 8,
-//     padding: 4,
-//   },
-//   // New styles for the redesigned timetable button
-//   timetableButtonContainer: {
-//     marginTop: 20,
-//     marginHorizontal: 16,
-//     marginBottom: 30,
-//   },
-//   timetableButton: {
-//     borderRadius: 16,
-//     elevation: 4,
-//     shadowColor: "#3fa4ff",
-//     shadowOffset: { width: 0, height: 4 },
-//     shadowOpacity: 0.2,
-//     shadowRadius: 8,
-//   },
-//   buttonGradient: {
-//     flexDirection: "row",
-//     alignItems: "center",
-//     borderRadius: 16,
-//     paddingVertical: 16,
-//     paddingHorizontal: 20,
-//   },
-//   buttonIconContainer: {
-//     backgroundColor: "rgba(255,255,255,0.2)",
-//     borderRadius: 12,
-//     width: 50,
-//     height: 50,
-//     alignItems: "center",
-//     justifyContent: "center",
-//   },
-//   buttonTextContainer: {
-//     flex: 1,
-//     marginLeft: 16,
-//   },
-//   buttonTitle: {
-//     color: "#fff",
-//     fontSize: 18,
-//     fontWeight: "bold",
-//   },
-//   buttonSubtitle: {
-//     color: "rgba(255,255,255,0.8)",
-//     fontSize: 14,
-//     marginTop: 2,
-//   },
-//   buttonArrow: {
-//     backgroundColor: "rgba(255,255,255,0.15)",
-//     borderRadius: 50,
-//     width: 32,
-//     height: 32,
-//     alignItems: "center",
-//     justifyContent: "center",
-//   },
-//   // Existing legacy styles
-//   scrolle: {},
-//   header: {
-//     flexDirection: "row",
-//     alignItems: "center",
-//     backgroundColor: "#222",
-//     marginTop: 10,
-//     marginBottom: 10,
-//     padding: 10,
-//     borderRadius: 10,
-//     width: "90%",
-//     alignSelf: "center",
-//   },
-//   addTTBtn: {
-//     backgroundColor: "#3fa4ff",
-//     borderRadius: 10,
-//     paddingVertical: 16,
-//     paddingHorizontal: 16,
-//     marginTop: 24,
-//     marginBottom: 100,
-//     width: "90%",
-//     alignSelf: "center",
-//   },
-//   addTTBtnText: {
-//     color: "#fff",
-//     fontWeight: "bold",
-//     fontSize: 18,
-//     textAlign: "center",
-//   },
-//   bottomNav: {
-//     flexDirection: "row",
-//     justifyContent: "space-around",
-//     alignItems: "center",
-//     backgroundColor: "#181818",
-//     borderTopWidth: 1,
-//     borderTopColor: "#222",
-//     height: 56,
-//     width: "100%",
-//     position: "absolute",
-//     bottom: 0,
-//     left: 0,
-//   },
-//   navIcon: {
-//     flex: 1,
-//     alignItems: "center",
-//   },
-//   attendanceContainer: {
-//     position: "absolute",
-//     flex: 1,
-//     backgroundColor: "transparent",
-//     padding: 16,
-//     alignSelf: "center",
-//     justifyContent: "center",
-//     alignItems: "center",
-//     zIndex: 9999,
-//   },
-// });
 const styles = StyleSheet.create({
   container: {
     // backgroundColor: "#181818",

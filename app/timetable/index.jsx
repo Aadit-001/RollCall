@@ -18,11 +18,17 @@ import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { getFirestore, doc, updateDoc, setDoc } from "firebase/firestore";
+import {
+  getFirestore,
+  doc,
+  updateDoc,
+  setDoc,
+  getDoc,
+} from "firebase/firestore";
 import {
   initNotifications,
   scheduleWeeklyLectures,
-} from "../Notifications/notificationService";
+} from "@/services/Notifications/notificationService";
 
 const WEEK_DAYS = [
   "Monday",
@@ -74,6 +80,7 @@ export default function Timetable() {
     try {
       // First try to get data from AsyncStorage (prioritize local data)
       const data = await AsyncStorage.getItem("timetable");
+      console.log(data);
 
       if (data) {
         // If data exists in AsyncStorage, use it
@@ -81,11 +88,14 @@ export default function Timetable() {
       } else {
         // If no data in AsyncStorage, try Firebase
         const useruid = await AsyncStorage.getItem("userToken"); // Assuming you store user ID here
+        console.log("User ID:", useruid);
 
         if (useruid) {
           const db = getFirestore();
           const docRef = doc(db, "users", useruid);
+          // console.log("Firebase doc ref:", docRef);
           const docSnap = await getDoc(docRef);
+          // console.log("Firebase data:", docSnap.data());
 
           if (docSnap.exists() && docSnap.data().timetable) {
             // If Firebase has data, use it and save to AsyncStorage for future use
@@ -243,6 +253,8 @@ export default function Timetable() {
         "subjects",
         JSON.stringify(finalSubjectObjects)
       );
+
+      // console.log("Subjects saved successfully:", finalSubjectObjects);
 
       // Show success feedback
       const db = getFirestore();

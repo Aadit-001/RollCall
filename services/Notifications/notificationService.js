@@ -170,7 +170,7 @@ export async function scheduleWeeklyLectures(lectures) {
 
     await notifee.createTriggerNotification(
       {
-        title: `RollCall: ${lectureName} starts now!`,
+        title: `RollCall: Are you attending ${lectureName}`,
         body: "Tap Yes / No to mark attendance",
         android: {
           channelId: "rollcall",

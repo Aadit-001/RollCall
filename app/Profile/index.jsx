@@ -23,7 +23,7 @@ import AttendancePercentageFinder from "@/components/AttendancePercentageFinder"
 const ProfileScreen = () => {
   const router = useRouter();
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("user@example.com");
+  // const [email, setEmail] = useState("user@example.com");
   const [attendanceCriteria, setAttendanceCriteria] = useState(null);
   const [showAttendanceFinder, setShowAttendanceFinder] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -33,10 +33,10 @@ const ProfileScreen = () => {
     setIsLoading(true);
     try {
       const storedName = await AsyncStorage.getItem("userName");
-      const storedEmail = await AsyncStorage.getItem("userEmail");
+      // const storedEmail = await AsyncStorage.getItem("userEmail");
       const storedAttendanceCriteria = await AsyncStorage.getItem("percentage");
       if (storedName) setName(storedName);
-      if (storedEmail) setEmail(storedEmail);
+      // if (storedEmail) setEmail(storedEmail);
       if (storedAttendanceCriteria) setAttendanceCriteria(storedAttendanceCriteria);
       else setAttendanceCriteria(null);
     } catch (error) {
@@ -60,32 +60,32 @@ const ProfileScreen = () => {
     setRefreshing(false);
   }, [fetchUserData]);
 
-  const handleLogout = async () => {
-    Alert.alert("Logout", "Are you sure you want to logout?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Logout",
-        onPress: async () => {
-          setIsLoading(true);
-          try {
-            await signOut(auth);
-            await AsyncStorage.multiRemove([
-              "userToken", 
-              "userTimetable", "timetable", "percentage", 
-              "timetableData", "subjects"
-            ]);
-            router.replace("/auth/Signin");
-          } catch (error) {
-            console.error("Error logging out:", error);
-            Alert.alert("Logout Failed", "An error occurred. Please try again.");
-          } finally {
-            setIsLoading(false);
-          }
-        },
-        style: "destructive",
-      },
-    ]);
-  };
+  // const handleLogout = async () => {
+  //   Alert.alert("Logout", "Are you sure you want to logout?", [
+  //     { text: "Cancel", style: "cancel" },
+  //     {
+  //       text: "Logout",
+  //       onPress: async () => {
+  //         setIsLoading(true);
+  //         try {
+  //           await signOut(auth);
+  //           await AsyncStorage.multiRemove([
+  //             "userToken", 
+  //             "userTimetable", "timetable", "percentage", 
+  //             "timetableData", "subjects"
+  //           ]);
+  //           router.replace("/auth/Signin");
+  //         } catch (error) {
+  //           console.error("Error logging out:", error);
+  //           Alert.alert("Logout Failed", "An error occurred. Please try again.");
+  //         } finally {
+  //           setIsLoading(false);
+  //         }
+  //       },
+  //       style: "destructive",
+  //     },
+  //   ]);
+  // };
 
   const handleResetAllData = () => {
     Alert.alert(
@@ -172,7 +172,7 @@ const ProfileScreen = () => {
             <Text style={styles.avatarText}>{getInitials(name)}</Text>
           </View>
           <Text style={styles.userName}>{name || "User Name"}</Text>
-          <Text style={styles.userEmail}>{email}</Text>
+          {/* <Text style={styles.userEmail}>{email}</Text> */}
           <View style={styles.attendanceDisplayContainer}>
             <Text style={styles.attendanceCriteriaText}>
               Attendance Criteria: {attendanceCriteria ? `${attendanceCriteria}%` : "Not Set"}
@@ -203,10 +203,10 @@ const ProfileScreen = () => {
           />
         </View>
 
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+        {/* <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <Ionicons name="log-out-outline" size={24} color="#fff" style={styles.logoutIcon} />
           <Text style={styles.logoutButtonText}>Logout</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </ScrollView>
     </SafeAreaView>
   );

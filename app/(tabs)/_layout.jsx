@@ -29,7 +29,7 @@ export default function TabLayout() {
     }
   });
   const [isOnboardingDone, setIsOnboardingDone] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  // const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [initializing, setInitializing] = useState(true);
   const [name, setName] = useState('');
 
@@ -39,6 +39,7 @@ export default function TabLayout() {
       try {
         const onboardingDone = await AsyncStorage.getItem('onboardingDone');
         setIsOnboardingDone(onboardingDone === 'true');
+        setInitializing(false);
       } catch (error) {
         console.error('Error checking onboarding status:', error);
       }
@@ -47,16 +48,16 @@ export default function TabLayout() {
     checkOnboardingStatus();
   }, []);
 
-  useEffect(() => {
-    const auth = getAuth();
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setIsLoggedIn(!!user);
-      if (initializing) setInitializing(false);
-    });
+  // useEffect(() => {
+  //   const auth = getAuth();
+  //   const unsubscribe = onAuthStateChanged(auth, (user) => {
+  //     setIsLoggedIn(!!user);
+  //     if (initializing) setInitializing(false);
+  //   });
 
-    // Cleanup subscription on unmount
-    return () => unsubscribe();
-  }, []);
+  //   // Cleanup subscription on unmount
+  //   return () => unsubscribe();
+  // }, []);
 
   useEffect(() => {
     AsyncStorage.getItem('userName').then(name => {
@@ -79,7 +80,7 @@ export default function TabLayout() {
   return (
     <SafeAreaProvider>
       {isOnboardingDone ? (
-        isLoggedIn ? (
+        // isLoggedIn ? (
           <Tabs
       screenOptions={{
         // headerShown: false,
@@ -216,9 +217,9 @@ export default function TabLayout() {
         }}
       />
         </Tabs>
-        ) : (
-          <Signin />
-        )
+        // ) : (
+        //   <Signin />
+        // )
       ): (
           <Welcome />
         )}

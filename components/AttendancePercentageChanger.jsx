@@ -14,14 +14,14 @@ import { LinearGradient } from "expo-linear-gradient";
 
 export default function AttendancePercentageFinder({ onClose }) {
   const [attendanceCriteria, setAttendanceCriteria] = useState(75);
-  const [userName,setName] = useState("");
-  const [nameError,setNameError] = useState("");
+  // const [userName,setName] = useState("");
+  // const [nameError,setNameError] = useState("");
 
   const handleDone = async () => {
-    if(!userName.trim()) {
-      setNameError("Please enter your name");
-      return;
-    }
+    // if(!userName.trim()) {
+    //   setNameError("Please enter your name");
+    //   return;
+    // }
 
     if(attendanceCriteria < 0 || attendanceCriteria > 100) {
       Alert.alert("Please enter a valid attendance criteria");
@@ -31,7 +31,7 @@ export default function AttendancePercentageFinder({ onClose }) {
     try {
       // Save the attendance percentage to AsyncStorage
       await AsyncStorage.setItem('percentage', attendanceCriteria.toString());
-      await AsyncStorage.setItem('userName', userName.trim());
+      // await AsyncStorage.setItem('userName', userName.trim());
       // Close the modal
       onClose();
     } catch (error) {
@@ -71,7 +71,7 @@ export default function AttendancePercentageFinder({ onClose }) {
       <View style={styles.modalOverlay}>
         <View style={styles.glassContainer}>
           <Text style={styles.heading}>ROLL CALL</Text>
-          <Text style={styles.label}>Name</Text>
+          {/* <Text style={styles.label}>Name</Text>
           <TextInput
             style={styles.input}
             placeholder="Enter your name"
@@ -80,7 +80,7 @@ export default function AttendancePercentageFinder({ onClose }) {
             placeholderTextColor="#999"
           />
 
-          {nameError && <Text style={styles.errorText}>{nameError}</Text>}
+          {nameError && <Text style={styles.errorText}>{nameError}</Text>} */}
           <Text style={styles.label}>Attendance Criteria (%)</Text>
           {/* Custom Attendance Selector */}
           <View style={styles.attendanceContainer}>
@@ -329,3 +329,8 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 });
+
+
+
+
+

@@ -7,6 +7,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Alert } from "react-native";
 import { initNotifications } from "@/services/Notifications/notificationService";
 
+
 // Register background handler outside any component
 // This ensures it's loaded early and only once
 notifee.onBackgroundEvent(async ({ type, detail }) => {

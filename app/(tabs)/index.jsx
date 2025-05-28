@@ -17,6 +17,8 @@ import AttendancePercentageFinder from "@/components/AttendancePercentageFinder"
 import { StatusBar } from "expo-status-bar";
 import { Alert } from "react-native";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
+// import { WEEK_DAYS } from "@/constants/timetable";
+
 import {
   initNotifications,
   scheduleWeeklyLectures,
@@ -335,7 +337,7 @@ const Home = () => {
     }, [])
   );
 
-  const loadName = async () => {
+  const loadName = useCallback(async () => {
     try {
       // 1) Try to load from cache
       const cachedName = await AsyncStorage.getItem("userName");
@@ -345,36 +347,54 @@ const Home = () => {
       }
 
       // 2) No cached name → get the user ID
-      const userId = await AsyncStorage.getItem("userToken");
-      if (!userId) {
-        console.warn("No userToken in AsyncStorage");
-        return;
-      }
+      // const userId = await AsyncStorage.getItem("userToken");
+      // if (!userId) {
+      //   console.warn("No userToken in AsyncStorage");
+      //   return;
+      // }
 
       // 3) Fetch Firestore doc
-      const db = getFirestore();
-      const snap = await getDoc(doc(db, "users", userId));
-      if (!snap.exists()) {
-        console.warn(`No user document for ID ${userId}`);
-        return;
-      }
+      // const db = getFirestore();
+      // const snap = await getDoc(doc(db, "users", userId));
+      // if (!snap.exists()) {
+      //   console.warn(`No user document for ID ${userId}`);
+      //   return;
+      // }
 
-      console.log("User document data:", snap.data().name);
+      // console.log("User document data:", snap.data().name);
 
       // 4) Read & validate the `name` field
-      const nameFromDb = snap.data().name;
-      if (!nameFromDb) {
-        console.warn("User document has no `name` field");
-        return;
-      }
+      // const nameFromDb = snap.data().name;
+      // if (!nameFromDb) {
+      //   console.warn("User document has no `name` field");
+      //   return;
+      // }
 
       // 5) Set state and cache it
-      setName(nameFromDb);
-      await AsyncStorage.setItem("userName", nameFromDb);
+
+      setName(cachedName);
+      await AsyncStorage.setItem("userName", cachedName);
     } catch (error) {
       console.error("Error in loadName:", error);
     }
-  };
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadName();
+      return () => {};
+    }, [loadName])
+  );
+
+  const handleAttendanceFinderClose = useCallback(async () => {
+      setShowAttendanceFinder(false);
+      await loadName();
+    }, [loadName]);
+  // const onRefresh = useCallback(async () => {
+  //     setRefreshing(true);
+  //     await fetchUserData();
+  //     setRefreshing(false);
+  //   }, [fetchUserData]);
 
   const loadTimetable = async () => {
     try {
@@ -630,30 +650,30 @@ Attendance will update on the Attendance Screen.`
   };
 
   // Logout and onboarding reset logic
-  // const deleteOnboardingData = async () => {
-  //   try {
-  //     await AsyncStorage.removeItem("onboardingDone");
-  //     await AsyncStorage.removeItem("percentage");
-  //     router.replace("/onboarding/Welcome");
-  //   } catch (error) {
-  //     console.error("Error deleting onboarding data:", error);
-  //   }
-  // };
+  const deleteOnboardingData = async () => {
+    try {
+      await AsyncStorage.removeItem("onboardingDone");
+      // await AsyncStorage.removeItem("percentage");
+      router.replace("/onboarding/Welcome");
+    } catch (error) {
+      console.error("Error deleting onboarding data:", error);
+    }
+  };
 
-  useEffect(() => {
-    AsyncStorage.getItem("userName").then((name) => {
-      if (name) {
-        setName(name);
-      }
-    });
-  }, []);
+  // useEffect(() => {
+  //   AsyncStorage.getItem("userName").then((name) => {
+  //     if (name) {
+  //       setName(name);
+  //     }
+  //   });
+  // }, []);
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="light" backgroundColor="#121212" />
       {showAttendanceFinder && (
         <AttendancePercentageFinder
-          onClose={() => setShowAttendanceFinder(false)}
+          onClose={handleAttendanceFinderClose}
         />
       )}
       <View style={styles.headerRow}>
@@ -681,10 +701,10 @@ Attendance will update on the Attendance Screen.`
           <>
             {/* Welcome Box */}
 
-            <View style={styles.topBox}>
+            <Pressable style={styles.topBox} onPress={deleteOnboardingData}>
               <Text style={styles.topBoxText}>Welcome To</Text>
               <Text style={styles.topBoxTextName}>R O L L C A L L</Text>
-            </View>
+            </Pressable>
 
             {/* Creative Timetable Button - MOVED UP */}
             <View style={styles.timetableButtonContainer}>

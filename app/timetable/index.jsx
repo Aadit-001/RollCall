@@ -86,35 +86,7 @@ export default function Timetable() {
         // If data exists in AsyncStorage, use it
         setTimetable(JSON.parse(data).days);
       } else {
-        // If no data in AsyncStorage, try Firebase
-        const useruid = await AsyncStorage.getItem("userToken"); // Assuming you store user ID here
-        console.log("User ID:", useruid);
-
-        if (useruid) {
-          const db = getFirestore();
-          const docRef = doc(db, "users", useruid);
-          // console.log("Firebase doc ref:", docRef);
-          const docSnap = await getDoc(docRef);
-          // console.log("Firebase data:", docSnap.data());
-
-          if (docSnap.exists() && docSnap.data().timetable) {
-            // If Firebase has data, use it and save to AsyncStorage for future use
-            const firebaseData = docSnap.data().timetable;
-            setTimetable(firebaseData.days);
-
-            // Save to AsyncStorage to avoid Firebase queries next time
-            await AsyncStorage.setItem(
-              "timetable",
-              JSON.stringify(firebaseData)
-            );
-          } else {
-            // If neither source has data, initialize empty structure
-            setTimetable(WEEK_DAYS.map((day) => ({ day, subjects: [] })));
-          }
-        } else {
-          // If no user ID available, use default empty structure
-          setTimetable(WEEK_DAYS.map((day) => ({ day, subjects: [] })));
-        }
+        setTimetable(WEEK_DAYS.map((day) => ({ day, subjects: [] })));
       }
     } catch (error) {
       // console.error("Error loading timetable:", error);
@@ -192,12 +164,12 @@ export default function Timetable() {
     try {
       // Save timetable data
 
-      const useruid = await AsyncStorage.getItem("userToken");
-      console.log("User ID:", useruid);
+      // const useruid = await AsyncStorage.getItem("userToken");
+      // console.log("User ID:", useruid);
 
-      if (!useruid) {
-        throw new Error("User ID not found in AsyncStorage");
-      }
+      // if (!useruid) {
+      //   throw new Error("User ID not found in AsyncStorage");
+      // }
       await AsyncStorage.setItem(
         "timetable",
         JSON.stringify({ days: timetable })
@@ -257,13 +229,13 @@ export default function Timetable() {
       // console.log("Subjects saved successfully:", finalSubjectObjects);
 
       // Show success feedback
-      const db = getFirestore();
-      const userDocRef = doc(db, "users", useruid);
+      // const db = getFirestore();
+      // const userDocRef = doc(db, "users", useruid);
 
       // Update the user document with timetable data
-      await updateDoc(userDocRef, {
-        timetable: { days: timetable },
-      });
+      // await updateDoc(userDocRef, {
+      //   timetable: { days: timetable },
+      // });
 
       // Flatten lectures and schedule weekly
       const allLectures = timetable.flatMap((day) =>
@@ -586,6 +558,9 @@ export default function Timetable() {
                             </Text>
                           </LinearGradient>
                         </TouchableOpacity>
+                        <View>
+                          {renderSaveButton(dayIdx)}
+                        </View>
                       </View>
                     )}
                   </View>

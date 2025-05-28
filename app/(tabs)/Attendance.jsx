@@ -78,41 +78,13 @@ const Attendance = () => {
       if (data) {
         // If data exists in AsyncStorage, use it
         setTimetable(JSON.parse(data).days);
-      } else {
-        // If no data in AsyncStorage, try Firebase
-        const useruid = await AsyncStorage.getItem("userToken"); // Assuming you store user ID here
-        console.log("User ID:", useruid);
-
-        if (useruid) {
-          const db = getFirestore();
-          const docRef = doc(db, "users", useruid);
-          // console.log("Firebase doc ref:", docRef);
-          const docSnap = await getDoc(docRef);
-          // console.log("Firebase data:", docSnap.data());
-
-          if (docSnap.exists() && docSnap.data().timetable) {
-            // If Firebase has data, use it and save to AsyncStorage for future use
-            const firebaseData = docSnap.data().timetable;
-            setTimetable(firebaseData.days);
-
-            // Save to AsyncStorage to avoid Firebase queries next time
-            await AsyncStorage.setItem(
-              "timetable",
-              JSON.stringify(firebaseData)
-            );
-          } else {
-            // If neither source has data, initialize empty structure
-            setTimetable(WEEK_DAYS.map((day) => ({ day, subjects: [] })));
-          }
-        } else {
-          // If no user ID available, use default empty structure
-          setTimetable(WEEK_DAYS.map((day) => ({ day, subjects: [] })));
-        }
+      } else{
+        setTimetable(null);
       }
     } catch (error) {
       // console.error("Error loading timetable:", error);
       // Fallback to empty structure on any errors
-      setTimetable(WEEK_DAYS.map((day) => ({ day, subjects: [] })));
+      setTimetable(null);
     }
   };
 

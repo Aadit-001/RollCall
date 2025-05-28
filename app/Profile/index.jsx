@@ -18,7 +18,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { StatusBar } from "expo-status-bar";
 import { auth } from "../auth/firebaseConfig";
 import { signOut } from "firebase/auth";
-import AttendancePercentageFinder from "@/components/AttendancePercentageFinder";
+import AttendancePercentageChanger from "@/components/AttendancePercentageChanger";
 
 const ProfileScreen = () => {
   const router = useRouter();
@@ -145,7 +145,7 @@ const ProfileScreen = () => {
         </View>
       )}
       {showAttendanceFinder && (
-        <AttendancePercentageFinder onClose={handleAttendanceFinderClose} />
+        <AttendancePercentageChanger onClose={handleAttendanceFinderClose} />
       )}
       <ScrollView 
         style={styles.container}

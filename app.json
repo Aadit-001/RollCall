@@ -13,7 +13,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/icon.jpg",
         "backgroundColor": "#ffffff"
       },
       "package": "com.anonymous.RollCall"
@@ -21,14 +21,14 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/icon.jpg"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/images/rc3.jpeg",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
@@ -38,7 +38,7 @@
         "@evennit/notifee-expo-plugin",
         {
           "iosDeploymentTarget": "13.4",
-          "apsEnvMode": "development",
+          "apsEnvMode": "production",
           "backgroundModes": ["remote-notification"]
         }
       ]

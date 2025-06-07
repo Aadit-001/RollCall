@@ -17,6 +17,8 @@ import AttendancePercentageFinder from "@/components/AttendancePercentageFinder"
 import { StatusBar } from "expo-status-bar";
 import { Alert } from "react-native";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
+import { Modal } from 'react-native';
+import { BarChart } from 'react-native-chart-kit';
 // import { WEEK_DAYS } from "@/constants/timetable";
 
 import {
@@ -45,6 +47,148 @@ const getCurrentDateString = () => {
   return `${year}-${month}-${day}`;
 };
 
+const canBunkAllLectures = async (lectures) => {
+  if (!lectures || lectures.length === 0) return false;
+  
+  const now = new Date();
+  const currentTime = now.getHours() * 60 + now.getMinutes();
+  
+  // Sort lectures by start time to find the first lecture
+  const sortedLectures = [...lectures].sort((a, b) => {
+    const [aHours, aMins] = a.startTime.split(':').map(Number);
+    const [bHours, bMins] = b.startTime.split(':').map(Number);
+    return (aHours * 60 + aMins) - (bHours * 60 + bMins);
+  });
+  
+  const firstLecture = sortedLectures[0];
+  const [firstStartHour, firstStartMin] = firstLecture.startTime.split(':').map(Number);
+  const firstStartTime = firstStartHour * 60 + firstStartMin;
+  
+  // Check if current time is before first lecture
+  if (currentTime >= firstStartTime) {
+    return false;
+  }
+
+  // Get the required attendance percentage
+  try {
+    const requiredPercentage = parseFloat(await AsyncStorage.getItem("percentage")) || 75; // Default to 75% if not set
+    
+    // Check if any lecture has attendance below the required percentage
+    const hasLowAttendance = sortedLectures.some(lecture => {
+      const attended = lecture.attendedClasses || 0;
+      const total = lecture.totalClasses || 1; // Avoid division by zero
+      const attendancePercentage = (attended / total) * 100;
+      return attendancePercentage < requiredPercentage;
+    });
+
+    return !hasLowAttendance;
+  } catch (error) {
+    console.error("Error checking attendance percentage:", error);
+    return false; // Be safe - don't allow bunking if we can't verify attendance
+  }
+};
+
+const BunkModal = ({ visible, lectures, onClose }) => {
+  if (!lectures || lectures.length === 0) return null;
+
+  const calculateBunkStats = () => {
+    const stats = {
+      totalLectures: lectures.length,
+      totalHours: 0,
+      bySubject: {},
+    };
+
+    lectures.forEach(lecture => {
+      const [startH, startM] = lecture.startTime.split(':').map(Number);
+      const [endH, endM] = lecture.endTime.split(':').map(Number);
+      const duration = (endH * 60 + endM) - (startH * 60 + startM);
+      const hours = duration / 60;
+      
+      stats.totalHours += hours;
+      stats.bySubject[lecture.name] = (stats.bySubject[lecture.name] || 0) + hours;
+    });
+
+    return stats;
+  };
+
+  const stats = calculateBunkStats();
+  const chartData = {
+    labels: Object.keys(stats.bySubject),
+    datasets: [{
+      data: Object.values(stats.bySubject).map(hours => Math.round(hours * 10) / 10)
+    }]
+  };
+
+  return (
+    <Modal
+      animationType="slide"
+      transparent={true}
+      visible={visible}
+      onRequestClose={onClose}
+    >
+      <View style={styles.centeredView}>
+        <View style={styles.modalView}>
+          <Text style={styles.modalTitle}>🎉 Good News!</Text>
+          <Text style={styles.modalSubtitle}>
+            You can bunk all {stats.totalLectures} lectures today and save {stats.totalHours.toFixed(1)} hours!
+          </Text>
+          
+          {/* <View style={{ width: '100%', marginVertical: 15 }}>
+            <Text style={styles.chartTitle}>Time Saved by Subject</Text>
+            <BarChart
+              data={chartData}
+              width={280}
+              height={220}
+              yAxisSuffix="h"
+              chartConfig={{
+                backgroundColor: '#1e1e1e',
+                backgroundGradientFrom: '#1e1e1e',
+                backgroundGradientTo: '#1e1e1e',
+                decimalPlaces: 1,
+                color: (opacity = 1) => `rgba(63, 164, 255, ${opacity})`,
+                labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+                style: {
+                  borderRadius: 16
+                },
+                barPercentage: 0.5,
+              }}
+              style={{
+                marginVertical: 8,
+                borderRadius: 16,
+                paddingRight: 30
+              }}
+              verticalLabelRotation={30}
+            />
+          </View> */}
+
+          <View style={styles.statsContainer}>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{stats.totalLectures}</Text>
+              <Text style={styles.statLabel}>Lectures</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{stats.totalHours.toFixed(1)}h</Text>
+              <Text style={styles.statLabel}>Total Time</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>🎯</Text>
+              <Text style={styles.statLabel}>All Clear</Text>
+            </View>
+          </View>
+
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={onClose}
+          >
+            <Text style={styles.closeButtonText}>Got it!</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+};
+
+
 const Home = () => {
   const [lectures, setLectures] = useState([]);
   const [hasTimetable, setHasTimetable] = useState(false);
@@ -52,7 +196,38 @@ const Home = () => {
   const [showAttendanceFinder, setShowAttendanceFinder] = useState(false);
   const [name, setName] = useState("");
   const [todayy, setTodayy] = useState("");
+  
+  const [showBunkModal, setShowBunkModal] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    const checkBunkStatus = async () => {
+      try {
+        const today = getToday();
+        const timetableData = await AsyncStorage.getItem("timetable");
+        
+        if (timetableData) {
+          const timetable = JSON.parse(timetableData);
+          const todayLectures = timetable.days?.find(d => d.day === today)?.subjects || [];
+          
+          if (todayLectures.length > 0 && await canBunkAllLectures(todayLectures)) {
+            // Check if we've shown the modal today
+            const lastShown = await AsyncStorage.getItem("lastBunkModalShown");
+            const todayStr = new Date().toDateString();
+            
+            if (lastShown !== todayStr) {
+              setShowBunkModal(true);
+              await AsyncStorage.setItem("lastBunkModalShown", todayStr);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error checking bunk status:", error);
+      }
+    };
+  
+    checkBunkStatus();
+  }, []);
 
   useEffect(() => {
     const todayDate = getToday();
@@ -64,6 +239,31 @@ const Home = () => {
       await loadTimetable();
     })();
   }, []);
+
+  // useEffect(() => {
+  //   const setupNotifications = async () => {
+  //     const hasPermission = await initNotifications();
+  //     if (!hasPermission) {
+  //       // Handle case where user denied permissions
+  //       Alert.alert(
+  //         "Permission Required",
+  //         "Please enable notifications to receive attendance reminders.",
+  //         [
+  //           {
+  //             text: "Cancel",
+  //             onPress: () => console.log("Cancel Pressed"),
+  //             style: "cancel",
+  //           },
+  //           {
+  //             text: "OK",
+  //             onPress: () => console.log("OK Pressed"),
+  //           },
+  //         ]
+  //       );
+  //     }
+  //   };
+  //   setupNotifications();
+  // }, []);
 
   const getCurrentDateString = () => {
     const date = new Date();
@@ -306,6 +506,7 @@ const Home = () => {
       subscription.remove();
     };
   }, []);
+  
   useFocusEffect(
     useCallback(() => {
       const checkAttendancePercentage = async () => {
@@ -653,6 +854,8 @@ Attendance will update on the Attendance Screen.`
   const deleteOnboardingData = async () => {
     try {
       await AsyncStorage.removeItem("onboardingDone");
+      // await AsyncStorage.removeItem("showBunkModal");
+      await AsyncStorage.removeItem("lastBunkModalShown");
       // await AsyncStorage.removeItem("percentage");
       router.replace("/onboarding/Welcome");
     } catch (error) {
@@ -676,6 +879,7 @@ Attendance will update on the Attendance Screen.`
           onClose={handleAttendanceFinderClose}
         />
       )}
+      
       <View style={styles.headerRow}>
         <View style={styles.profileGroup}>
           <TouchableOpacity
@@ -848,6 +1052,11 @@ Attendance will update on the Attendance Screen.`
       </TouchableOpacity> */}
 
       {/* <View style={styles.bottomNav} /> */}
+      <BunkModal 
+        visible={showBunkModal}
+        lectures={lectures}
+        onClose={() => setShowBunkModal(false)}
+      />
     </SafeAreaView>
   );
 };
@@ -869,6 +1078,9 @@ const styles = StyleSheet.create({
     color: "#AEAEB2",
     fontSize: 10,
     fontWeight: "bold",
+    alignSelf: "center",
+    // marginRight: 3,
+    textAlign: "center",
   },
   attendanceStatusTextPresent: {
     color: "#22dd22",
@@ -909,6 +1121,15 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
     marginTop: 40,
   },
+  // headerTextContainer: {
+  //   flexDirection: "column",
+  //   alignItems: "end",
+  //   borderWidth: 2,
+  //   borderColor: "#3fa4ff",
+  //   padding:5,
+  //   borderRadius: 12,
+  //   // gap: 2,
+  // },
   profileGroup: {
     flexDirection: "row",
     alignItems: "center",
@@ -929,7 +1150,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     // marginBottom: 15,
     borderWidth: 2,
-    borderColor: "#4A4A4A",
+    // borderColor: "#4A4A4A",
+    borderColor: "#3fa4ff",
   },
   profileIconText: {
     color: "#fff",
@@ -1140,6 +1362,85 @@ const styles = StyleSheet.create({
     paddingTop: 56,
     paddingHorizontal: 8,
   },
+  centeredView: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.7)',
+  },
+  modalView: {
+    margin: 20,
+    backgroundColor: '#1e1e1e',
+    borderRadius: 20,
+    padding: 25,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    width: '90%',
+    maxWidth: 350
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    color: '#fff',
+    textAlign: 'center'
+  },
+  modalSubtitle: {
+    fontSize: 16,
+    marginBottom: 15,
+    color: '#ccc',
+    textAlign: 'center'
+  },
+  chartTitle: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 10,
+    textAlign: 'center'
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '100%',
+    marginVertical: 15,
+    padding: 10,
+    backgroundColor: '#2c2c2e',
+    borderRadius: 12
+  },
+  statItem: {
+    alignItems: 'center',
+    padding: 10
+  },
+  statValue: {
+    color: '#3fa4ff',
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 4
+  },
+  statLabel: {
+    color: '#aaa',
+    fontSize: 12
+  },
+  closeButton: {
+    backgroundColor: '#3fa4ff',
+    borderRadius: 12,
+    padding: 12,
+    width: '100%',
+    alignItems: 'center',
+    marginTop: 10
+  },
+  closeButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16
+  }
   // Removed unused styles: scrolle, header, addTTBtn, addTTBtnText, bottomNav, navIcon, attendanceContainer, headerTitle, headerText
   // The following styles seem to be remnants or duplicates and are not directly used by the main content structure visible:
   // header, headerTitle, headerText were removed as they appear unused or superseded by headerRow group.

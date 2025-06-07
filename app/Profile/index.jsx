@@ -18,6 +18,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { StatusBar } from "expo-status-bar";
 import { auth } from "../auth/firebaseConfig";
 import { signOut } from "firebase/auth";
+// import { useRouter } from "expo-router";
+import { Modal } from "react-native";
 import AttendancePercentageChanger from "@/components/AttendancePercentageChanger";
 
 const ProfileScreen = () => {
@@ -28,6 +30,7 @@ const ProfileScreen = () => {
   const [showAttendanceFinder, setShowAttendanceFinder] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [showAboutModal, setShowAboutModal] = useState(false);
 
   const fetchUserData = useCallback(async () => {
     setIsLoading(true);
@@ -136,6 +139,14 @@ const ProfileScreen = () => {
     await fetchUserData();
   }, [fetchUserData]);
 
+  const handleAboutModalOpen = useCallback(() => {
+    setShowAboutModal(true);
+  }, []);
+
+  const handleAboutModalClose = useCallback(() => {
+    setShowAboutModal(false);
+  }, []);
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="light" backgroundColor="#121212" />
@@ -192,22 +203,62 @@ const ProfileScreen = () => {
             onPress={handleResetAllData} 
           />
           <MenuItem 
-            iconName="help-circle-outline" 
-            text="Help & Support" 
-            onPress={() => Alert.alert("Help & Support", "(Not Implemented)")} 
-          />
-          <MenuItem 
             iconName="document-text-outline" 
             text="Privacy Policy" 
             onPress={() => {router.push("/PrivacyPolicy")}} 
           />
+          {/* <MenuItem 
+            iconName="person-outline" 
+            text="About Us" 
+            onPress={() => {router.push("/AboutUs")}} 
+          /> */}
+          <MenuItem 
+            iconName="information-circle-outline" 
+            text="About Us" 
+            onPress={() => {setShowAboutModal(true)}} 
+          />
         </View>
+        
 
         {/* <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <Ionicons name="log-out-outline" size={24} color="#fff" style={styles.logoutIcon} />
           <Text style={styles.logoutButtonText}>Logout</Text>
         </TouchableOpacity> */}
+      <View style={styles.bottomTabBarContainer}>
+          <Text style={styles.bottomTabBarText}>Version 1.0.0</Text>
+          <Text style={styles.bottomTabBarText}>© 2025 RollCall. All rights reserved.</Text>
+      </View>
       </ScrollView>
+      <Modal
+        visible={showAboutModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowAboutModal(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <TouchableOpacity 
+                style={styles.modalCloseButton}
+                onPress={() => setShowAboutModal(false)}
+              >
+                <Ionicons name="close-outline" size={24} color="#fff" />
+              </TouchableOpacity>
+              <Text style={styles.modalTitle}>About RollCall</Text>
+            </View>
+            <View style={styles.modalBody}>
+              <View style={styles.developerCard}>
+                <Text style={styles.developerName}>Aadit Jha</Text>
+                <Text style={styles.developerRole}>Developer</Text>
+              </View>
+              <View style={styles.developerCard}>
+                <Text style={styles.developerName}>Tejas Billava</Text>
+                <Text style={styles.developerRole}>Developer</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -221,6 +272,54 @@ const MenuItem = ({ iconName, text, onPress }) => (
 );
 
 const styles = StyleSheet.create({
+  modalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#121212',
+    width: '90%',
+    borderRadius: 15,
+    padding: 20,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  modalCloseButton: {
+    padding: 10,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  modalBody: {
+    marginBottom: 20,
+  },
+  developerCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    padding: 15,
+    borderRadius: 10,
+    marginBottom: 15,
+  },
+  developerName: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 5,
+  },
+  developerRole: {
+    fontSize: 16,
+    color: '#A0A0A0',
+  },
   safeArea: {
     flex: 1,
     backgroundColor: "#121212",
@@ -263,7 +362,7 @@ const styles = StyleSheet.create({
     paddingVertical: 25,
     borderBottomWidth: 1,
     borderBottomColor: "#2A2A2A",
-    marginBottom: 20,
+    // marginBottom: 20,
   },
   avatarContainer: {
     width: 90,
@@ -344,6 +443,27 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 17,
     fontWeight: "600",
+  },
+  bottomTabBarContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    // paddingBottom: 20,
+    // marginBottom: 20,
+    flexDirection: "column",
+    paddingVertical: 80,
+    paddingHorizontal: 20,
+    backgroundColor: "#121212",
+    borderTopWidth: 1,
+    borderTopColor: "#2A2A2A",
+    // flexDirection: "row",
+    // justifyContent: "space-between",
+    alignItems: "center",
+  },
+  bottomTabBarText: {
+    color: "grey",
+    fontSize: 12,
+    fontWeight: "500",
   },
 });
 

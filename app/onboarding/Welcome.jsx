@@ -25,6 +25,11 @@ export default function Welcome() {
         resizeMode="cover"
       >
         <SafeAreaView style={styles.contentContainer}>
+          <View style={styles.dotContainer}>
+            <View style={styles.dot1}/>
+            <View style={styles.dot2}/>
+            {/* <View style={styles.dot}/> */}
+          </View>
           <View style={styles.buttonContainer}>
             <Link href="/onboarding/Welcome2" asChild>
               <TouchableOpacity style={styles.button}>
@@ -52,6 +57,25 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end", // Position at the bottom
     paddingBottom: 60,
     paddingHorizontal: 24,
+  },
+  dotContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginBottom: 20,
+  },
+  dot1: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#1E90FF",
+    marginHorizontal: 4,
+  },
+  dot2: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#fff",
+    marginHorizontal: 4,
   },
   buttonContainer: {
     width: "100%",

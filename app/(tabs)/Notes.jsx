@@ -19,6 +19,8 @@ import uuid from "react-native-uuid";
 import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import { ActivityIndicator } from "react-native";
+
 
 const STORAGE_KEY = "subjects";
 const SUBJECT_ICONS = {
@@ -40,6 +42,7 @@ const Notes = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [newSubject, setNewSubject] = useState("");
   const [fadeAnim] = useState(new Animated.Value(0));
+  const [initializing, setInitializing] = useState(true);
 
   // Animated entry effect
   useEffect(() => {
@@ -65,18 +68,23 @@ const Notes = () => {
   // This will reload subjects data when screen comes into focus
   useFocusEffect(
     useCallback(() => {
+      setInitializing(true);
       loadSubjects();
+      setInitializing(false);
       return () => {};
     }, [])
   );
 
   // Initial load
   useEffect(() => {
+    setInitializing(true);
     loadSubjects();
+    setInitializing(false);
   }, []);
 
   const loadSubjects = async () => {
     try {
+      setInitializing(true);
       const data = await AsyncStorage.getItem(STORAGE_KEY);
       if (data) {
         const loadedSubjects = JSON.parse(data);
@@ -86,10 +94,12 @@ const Notes = () => {
         setSubjects([]);
         setFilteredSubjects([]);
       }
+      setInitializing(false);
     } catch (error) {
       console.error("Error loading subjects:", error);
       setSubjects([]);
       setFilteredSubjects([]);
+      setInitializing(false);
     }
   };
 
@@ -231,7 +241,7 @@ const Notes = () => {
           style={styles.deleteIcon}
           onPress={() => handleDeleteSubject(item.id)}
         >
-          <Ionicons name="trash-outline" size={14} color="red" />
+          <Ionicons name="trash-outline" size={14} color="#ff6b6b" />
         </TouchableOpacity>
       </Animated.View>
     );
@@ -240,6 +250,15 @@ const Notes = () => {
   const clearSearch = () => {
     setSearchText("");
   };
+
+  if (initializing) {
+      return (
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading...</Text>
+          <ActivityIndicator size="large" color="#40E0D0" />
+        </View>
+      );
+  }
 
   return (
     <SafeAreaProvider>
@@ -408,6 +427,17 @@ const Notes = () => {
 export default Notes;
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#000', // Match your app's background
+  },
+  loadingText: {
+    color: '#40E0D0',
+    fontSize: 18,
+    marginBottom: 20,
+  },
   container: {
     flex: 1,
     backgroundColor: "#121212",

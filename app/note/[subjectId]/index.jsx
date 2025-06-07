@@ -269,7 +269,7 @@ export default function SubjectTopics() {
                 style={[styles.actionIcon, styles.deleteIcon]}
                 onPress={() => handleDeleteTopic(item.id)}
               >
-                <Ionicons name="trash-outline" size={18} color="red" />
+                <Ionicons name="trash-outline" size={18} color="#ff6b6b" />
               </TouchableOpacity>
             </View>
           </View>

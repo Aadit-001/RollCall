@@ -18,29 +18,141 @@ const getCurrentDateString = () => {
 };
 
 // Initialize channels & actions for notifications
+// export async function initNotifications() {
+//   if (Platform.OS === "android") {
+//     await notifee.createChannel({
+//       id: "rollcall",
+//       name: "RollCall Weekly Reminders",
+//       importance: AndroidImportance.HIGH,
+//     });
+//   }
+
+//   if (Platform.OS === "ios") {
+//     await notifee.setNotificationCategories([
+//       {
+//         id: "ROLLCALL",
+//         actions: [
+//           // Modified to open app in foreground
+//           { id: "yes", title: "Yes", options: { foreground: true } },
+//           { id: "no", title: "No", options: { foreground: true } },
+//           { id: "cancel", title: "Cancel", options: { foreground: true } },
+//         ],
+//       },
+//     ]);
+//   }
+
+// }
 export async function initNotifications() {
-  if (Platform.OS === "android") {
-    await notifee.createChannel({
-      id: "rollcall",
-      name: "RollCall Weekly Reminders",
-      importance: AndroidImportance.HIGH,
-    });
-  }
-
-  if (Platform.OS === "ios") {
-    await notifee.setNotificationCategories([
-      {
-        id: "ROLLCALL",
-        actions: [
-          // Modified to open app in foreground
-          { id: "yes", title: "Yes", options: { foreground: true } },
-          { id: "no", title: "No", options: { foreground: true } },
-          { id: "cancel", title: "Cancel", options: { foreground: true } },
-        ],
+  try {
+    // Request permissions
+    const settings = await notifee.requestPermission({
+      android: {
+        alert: true,
+        badge: true,
+        sound: true,
+        vibration: true,
+        light: true,
+        foregroundService: true,
+        criticalAlert: true,
+        provisional: false,
+        bypassDnd: true,
       },
-    ]);
-  }
+      ios: {
+        alert: true,
+        badge: true,
+        sound: true,
+        criticalAlert: true,
+        provisional: false,
+        announcement: true,
+        carPlay: true,
+      },
+    });
 
+    if (settings.authorizationStatus !== 'authorized') {
+      console.warn('Notification permissions not granted');
+      return false;
+    }
+
+    // Create Android channel with screen wake and system sound
+    if (Platform.OS === "android") {
+      await notifee.createChannel({
+        id: "rollcall",
+        name: "RollCall Weekly Reminders",
+        importance: AndroidImportance.HIGH,
+        visibility: AndroidVisibility.PUBLIC,
+        vibrationPattern: [0, 250, 250, 250],
+        lights: true,
+        lightColor: '#FF231F7C',
+        sound: 'default',
+        bypassDnd: true,
+        showBadge: true,
+        allowBackgroundProcessing: true,
+        priority: AndroidNotificationPriority.MAX,
+        lockscreenVisibility: AndroidVisibility.PUBLIC,
+        vibration: true,
+        fullScreenIntent: true,
+        groupId: 'rollcall_group',
+        groupSummary: true,
+      });
+    }
+
+    // Set iOS notification categories with critical alerts
+    if (Platform.OS === "ios") {
+      await notifee.setNotificationCategories([
+        {
+          id: "ROLLCALL",
+          actions: [
+            {
+              id: "yes",
+              title: "✅ Yes",
+              options: {
+                foreground: true,
+                destructive: false,
+                authenticationRequired: false,
+              },
+            },
+            {
+              id: "no",
+              title: "❌ No",
+              options: {
+                foreground: true,
+                destructive: false,
+                authenticationRequired: false,
+              },
+            },
+            {
+              id: "cancel",
+              title: "🚫 Dismiss",
+              options: {
+                foreground: false,
+                destructive: true,
+                authenticationRequired: false,
+              },
+            },
+          ],
+          options: {
+            hiddenPreviewShowTitle: true,
+            hiddenPreviewBody: true,
+            hiddenPreviewShowSubtitle: true,
+            hiddenPreviewFormat: 'default',
+            hiddenPreviewSummaryArgument: 'RollCall',
+            hiddenPreviewSummaryArgumentCount: 1,
+            customDismissAction: true,
+            carPlay: true,
+            criticalAlert: true,
+            sound: 'default',
+            announcement: true,
+            foreground: true,
+          },
+        },
+      ]);
+    }
+    await scheduleDailyBunkNotification();
+    return true;
+  } catch (error) {
+    console.error('Error initializing notifications:', error);
+    return false;
+  }
 }
 
 // Helper: Calculate the next occurrence of a weekday and time
@@ -97,7 +209,7 @@ export async function scheduleWeeklyLectures(lectures) {
     await notifee.createTriggerNotification(
       {
         title: `RollCall: Are you attending ${lectureName}`,
-        body: "Tap Yes / No to mark attendance",
+        body: "",
         android: {
           channelId: "rollcall",
           pressAction: {
@@ -106,26 +218,29 @@ export async function scheduleWeeklyLectures(lectures) {
           },
           actions: [
             {
-              title: "Yes",
+              title: "✅ Yes",
               pressAction: {
                 id: "yes",
                 launchActivity: "default", // Force app to open
               },
+              color: "green",
             },
             {
-              title: "No",
+              title: "❌ No",
               pressAction: {
                 id: "no",
                 launchActivity: "default", // Force app to open
               },
+              color: "red",
             },
             {
-              title: "Cancel Notification",
+              title: "🚫 Dismiss",
               pressAction: {
                 id: "cancel",
                 launchActivity: "none", // Prevent app from opening
               },
-            },
+              color: "gray",
+            },  
           ],
         },
         ios: {
@@ -136,8 +251,107 @@ export async function scheduleWeeklyLectures(lectures) {
           lectureStartTime: String(lec.startTime || ""),
           lectureDay: String(lec.day || ""),
         },
+        // color: "#FF231F7C",
       },
       trigger
     );
+  }
+}
+
+export async function canBunkAllLecturesToday() {
+  try {
+    const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+    const timetableData = await AsyncStorage.getItem("timetable");
+    
+    if (!timetableData) return false;
+    
+    const timetable = JSON.parse(timetableData);
+    const todayLectures = timetable.days?.find(d => d.day === today)?.subjects || [];
+    
+    if (todayLectures.length === 0) return false;
+    
+    // Check if all lectures can be bunked (before first lecture)
+    const now = new Date();
+    const currentTime = now.getHours() * 60 + now.getMinutes();
+    
+    const sortedLectures = [...todayLectures].sort((a, b) => {
+      const [aHours, aMins] = a.startTime.split(':').map(Number);
+      const [bHours, bMins] = b.startTime.split(':').map(Number);
+      return (aHours * 60 + aMins) - (bHours * 60 + bMins);
+    });
+    
+    const firstLecture = sortedLectures[0];
+    const [firstStartHour, firstStartMin] = firstLecture.startTime.split(':').map(Number);
+    const firstStartTime = firstStartHour * 60 + firstStartMin;
+    
+    return currentTime < firstStartTime;
+  } catch (error) {
+    console.error("Error checking bunk status:", error);
+    return false;
+  }
+}
+
+// Add this function to schedule the daily bunk notification
+export async function scheduleDailyBunkNotification() {
+  try {
+    // Cancel any existing daily notifications
+    await notifee.cancelAllNotifications({ tag: 'DAILY_BUNK_ALERT' });
+
+    // Calculate next 1:15 AM
+    const now = new Date();
+    let triggerDate = new Date();
+    triggerDate.setHours(1, 45, 0, 0);
+    
+    // If it's already past 1:15 AM today, schedule for tomorrow
+    if (now >= triggerDate) {
+      triggerDate.setDate(triggerDate.getDate() + 1);
+    }
+
+    const trigger = {
+      type: TriggerType.TIMESTAMP,
+      timestamp: triggerDate.getTime(),
+      repeatFrequency: RepeatFrequency.DAILY,
+    };
+
+    await notifee.createTriggerNotification(
+      {
+        id: 'daily-bunk-alert',
+        title: '🎉 Good News!',
+        body: 'You can bunk all lectures today! Tap to view details.',
+        android: {
+          channelId: "rollcall",
+          pressAction: {
+            id: "default",
+            launchActivity: "default",
+          },
+          smallIcon: 'ic_notification',
+          color: '#4CAF50',
+          tag: 'DAILY_BUNK_ALERT',
+          autoCancel: true,
+          showWhen: true,
+          importance: AndroidImportance.HIGH,
+        },
+        ios: {
+          sound: 'default',
+          categoryId: "ROLLCALL",
+          threadId: 'daily-bunk-alert',
+          foregroundPresentationOptions: {
+            badge: true,
+            sound: true,
+            banner: true,
+            list: true,
+          },
+        },
+        data: {
+          type: 'DAILY_BUNK_ALERT',
+          timestamp: Date.now().toString(),
+        },
+      },
+      trigger
+    );
+
+    console.log('Scheduled daily bunk notification');
+  } catch (error) {
+    console.error('Error scheduling daily bunk notification:', error);
   }
 }

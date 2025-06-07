@@ -42,6 +42,11 @@ export default function Welcome() {
           </View>
           
           <View style={styles.buttonContainer}>
+            <View style={styles.dotContainer}>
+                        <View style={styles.dot1}/>
+                        <View style={styles.dot2}/>
+                        {/* <View style={styles.dot}/> */}
+                      </View>
             <TouchableOpacity style={styles.button} onPress={handleCompleteOnboarding}>
               <Text style={styles.buttonText}>Get Started</Text>
             </TouchableOpacity>
@@ -63,17 +68,42 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flex: 1,
-    justifyContent: "space-between", // Position at the bottom
-    paddingBottom: 60,
+    height: "100%",
+
+    justifyContent: "center", // Position at the bottom
+    // alignItems: "center",
+    // paddingBottom: 60,
     paddingHorizontal: 24,
+    paddingTop: 380,
   },
   headingContainer: {
     alignItems: "center",
-    marginTop: 420,
+    // marginTop: 420,
+    // backgroundColor: "red",
     // marginBottom: 20,
   },
   buttonContainer: {
     width: "100%",
+    marginTop: 110,
+  },
+  dotContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginBottom: 20,
+  },
+  dot1: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#fff",
+    marginHorizontal: 4,
+  },
+  dot2: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#1E90FF",
+    marginHorizontal: 4,
   },
   button: {
     backgroundColor: "#1E90FF",

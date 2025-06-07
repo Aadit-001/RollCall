@@ -302,6 +302,7 @@ export default function Timetable() {
               (s) => s.id !== subjectId
             );
             updateTimetableLocally(updated); // Only update locally
+            saveToStorage();
           },
         },
       ]

@@ -4,17 +4,12 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
+  TextInput,
   Animated,
   ActivityIndicator,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import {
-  RichEditor,
-  RichToolbar,
-  actions,
-} from "react-native-pell-rich-editor";
 import { Ionicons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
 
@@ -23,50 +18,44 @@ export default function TopicNotes() {
   const subjectId = params.subjectId?.toString();
   const topicId = params.topicId?.toString();
   const router = useRouter();
-  const richText = useRef();
+  const textInputRef = useRef();
+
   const [note, setNote] = useState("");
   const [topicName, setTopicName] = useState("");
   const [isSaving, setIsSaving] = useState(false);
-  const [savedFeedback, setSavedFeedback] = useState(false);
+  const [wordCount, setWordCount] = useState(0);
+
   const saveOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     loadNote();
   }, []);
 
+  useEffect(() => {
+    // Update word count
+    const words = note
+      .trim()
+      .split(/\s+/)
+      .filter((word) => word.length > 0);
+    setWordCount(words.length);
+  }, [note]);
+
   const loadNote = async () => {
     try {
       const data = await AsyncStorage.getItem("subjects");
-      console.log("Loaded subjects (type):", typeof data);
-      console.log("Loaded subjects (value):", data);
-      
       if (data) {
         const subjects = JSON.parse(data);
-        console.log("Subjects (type):", typeof subjects);
-        console.log("Subjects (value):", subjects);
-        
         const subject = subjects.find((s) => s.id.toString() === subjectId);
-        console.log("Subject (type):", typeof subject);
-        console.log("Subject (value):", subject);
-        
+
         if (subject) {
           const topic = (subject.topics || []).find(
             (t) => t.id.toString() === topicId
           );
-          console.log("Topic (type):", typeof topic);
-          console.log("Topic (value):", topic);
-          
+
           if (topic) {
-            // Ensure notes is a string
-            const noteContent = topic.notes && typeof topic.notes === 'string' 
-              ? topic.notes 
-              : (topic.notes && topic.notes.toString ? topic.notes.toString() : '');
-            
-            console.log("Note Content (type):", typeof noteContent);
-            console.log("Note Content (value):", noteContent);
-            
+            const noteContent = topic.notes || "";
             setNote(noteContent);
-            setTopicName(topic.name || '');
+            setTopicName(topic.name || "");
           }
         }
       }
@@ -76,18 +65,6 @@ export default function TopicNotes() {
   };
 
   const saveNote = async (text) => {
-    console.log('saveNote input type:', typeof text);
-    console.log('saveNote input value:', text);
-
-    // Normalize text to a string
-    const normalizedText = text === null || text === undefined 
-      ? '' 
-      : (Array.isArray(text) ? text.join('') : text.toString());
-
-    console.log('Normalized text type:', typeof normalizedText);
-    console.log('Normalized text value:', normalizedText);
-
-    setNote(normalizedText);
     setIsSaving(true);
 
     try {
@@ -97,21 +74,18 @@ export default function TopicNotes() {
         const subjectIdx = subjects.findIndex(
           (s) => s.id.toString() === subjectId
         );
+
         if (subjectIdx !== -1) {
           const topicIdx = (subjects[subjectIdx].topics || []).findIndex(
             (t) => t.id.toString() === topicId
           );
-          if (topicIdx !== -1) {
-            // Update the note content
-            subjects[subjectIdx].topics[topicIdx].notes = normalizedText;
 
-            // Update the modifiedAt timestamp with current date/time
+          if (topicIdx !== -1) {
+            subjects[subjectIdx].topics[topicIdx].notes = text;
             subjects[subjectIdx].topics[topicIdx].modifiedAt =
               new Date().toISOString();
 
             await AsyncStorage.setItem("subjects", JSON.stringify(subjects));
-
-            // Show saved animation
             showSavedFeedback();
           }
         }
@@ -124,25 +98,42 @@ export default function TopicNotes() {
   };
 
   const showSavedFeedback = () => {
-    setSavedFeedback(true);
     Animated.sequence([
       Animated.timing(saveOpacity, {
         toValue: 1,
         duration: 300,
         useNativeDriver: true,
       }),
-      Animated.delay(1000),
+      Animated.delay(1500),
       Animated.timing(saveOpacity, {
         toValue: 0,
         duration: 500,
         useNativeDriver: true,
       }),
-    ]).start(() => setSavedFeedback(false));
+    ]).start();
+  };
+
+  const handleTextChange = (text) => {
+    setNote(text);
+
+    // Auto-save after 2 seconds of no typing
+    clearTimeout(textInputRef.saveTimeout);
+    textInputRef.saveTimeout = setTimeout(() => {
+      saveNote(text);
+    }, 2000);
+  };
+
+  const clearNote = () => {
+    setNote("");
+    saveNote("");
+    textInputRef.current?.focus();
   };
 
   return (
     <View style={styles.container}>
-      <StatusBar style="light" backgroundColor="#121212"/>
+      <StatusBar style="light" backgroundColor="#121212" />
+
+      {/* Header */}
       <View style={styles.headerRow}>
         <TouchableOpacity
           onPress={() => router.back()}
@@ -150,58 +141,60 @@ export default function TopicNotes() {
         >
           <Ionicons name="arrow-back" size={26} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.header}>{topicName}</Text>
 
-        <View style={styles.saveIndicator}>
-          {isSaving ? (
-            <ActivityIndicator size="small" color="#3fa4ff" />
-          ) : (
-            <Animated.View style={{ opacity: saveOpacity }}>
-              <View style={styles.savedBadge}>
-                <Ionicons name="checkmark-circle" size={16} color="#fff" />
-                <Text style={styles.savedText}>Saved</Text>
-              </View>
-            </Animated.View>
-          )}
+        <Text style={styles.header} numberOfLines={1}>
+          {topicName}
+        </Text>
+
+        <View style={styles.headerActions}>
+          {/* Clear button */}
+
+          {/* Save indicator */}
+          <View style={styles.saveIndicator}>
+            {isSaving ? (
+              <ActivityIndicator size="small" color="#3fa4ff" />
+            ) : (
+              <Animated.View style={{ opacity: saveOpacity }}>
+                <View style={styles.savedBadge}>
+                  <Ionicons name="checkmark-circle" size={16} color="#fff" />
+                  <Text style={styles.savedText}>Saved</Text>
+                </View>
+              </Animated.View>
+            )}
+          </View>
+            {note.length > 0 && (
+              <TouchableOpacity onPress={clearNote} style={styles.clearButton}>
+                <Ionicons name="trash-outline" size={20} color="#ff6b6b" />
+              </TouchableOpacity>
+            )}
         </View>
       </View>
 
-      <ScrollView style={{ flex: 1 }}>
-        <RichEditor
-          ref={richText}
-          initialContentHTML={typeof note === 'string' ? note : (Array.isArray(note) ? note.join('') : '')}
-          onChange={(text) => {
-            console.log('RichEditor onChange type:', typeof text);
-            console.log('RichEditor onChange value:', text);
-            saveNote(text);
-          }}
-          style={styles.richEditor}
-          placeholder="Write your notes here..."
-          editorStyle={{ backgroundColor: "#232323", color: "#fff" }}
-          androidHardwareAccelerationDisabled={true}
-          androidLayerType="software"
+      {/* Simple Text Editor */}
+      <View style={styles.editorContainer}>
+        <TextInput
+          ref={textInputRef}
+          style={styles.textEditor}
+          value={note}
+          onChangeText={handleTextChange}
+          placeholder="Start writing your notes here..."
+          placeholderTextColor="#666"
+          multiline
+          textAlignVertical="top"
+          autoCorrect={true}
+          spellCheck={true}
+          selectionColor="#3fa4ff"
         />
-      </ScrollView>
+      </View>
 
-      <RichToolbar
-  editor={richText}
-  actions={[
-    actions.setBold,
-    actions.setItalic,
-    actions.setUnderline,
-    actions.insertBulletsList,
-    actions.insertOrderedList,
-    actions.insertLink,
-    actions.setStrikethrough,
-    actions.setSuperscript,
-    actions.setSubscript,
-    actions.removeFormat,
-  ].filter(Boolean)}  // Add this .filter(Boolean)
-  style={styles.richToolbar}
-  iconTint="#fff"
-  selectedIconTint="#3fa4ff"
-  selectedButtonStyle={{ backgroundColor: "#232323" }}
-/>
+      {/* Footer with word count */}
+      <View style={styles.footer}>
+        <Text style={styles.footerText}>
+          {note.length > 0
+            ? `${wordCount} words • ${note.length} characters`
+            : "Start typing to see word count"}
+        </Text>
+      </View>
     </View>
   );
 }
@@ -231,9 +224,22 @@ const styles = StyleSheet.create({
   },
   header: {
     color: "#fff",
-    fontSize: 22,
-    fontWeight: "bold",
+    fontSize: 20,
+    fontWeight: "600",
     flex: 1,
+  },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  clearButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(255,107,107,0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 8,
   },
   saveIndicator: {
     width: 70,
@@ -253,16 +259,31 @@ const styles = StyleSheet.create({
     marginLeft: 3,
     fontWeight: "600",
   },
-  richEditor: {
-    minHeight: 300,
-    borderRadius: 12,
+  editorContainer: {
+    flex: 1,
     margin: 12,
     backgroundColor: "#232323",
-    color: "#fff",
+    borderRadius: 12,
+    padding: 20,
   },
-  richToolbar: {
-    backgroundColor: "#232323",
-    borderTopWidth: 1,
-    borderTopColor: "#333",
+  textEditor: {
+    flex: 1,
+    color: "#fff",
+    fontSize: 16,
+    lineHeight: 24,
+    textAlignVertical: "top",
+  },
+  footer: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: "#1a1a1a",
+    marginHorizontal: 12,
+    marginBottom: 12,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  footerText: {
+    color: "#888",
+    fontSize: 12,
   },
 });

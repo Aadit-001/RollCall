@@ -16,6 +16,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
+import { ActivityIndicator } from "react-native";
 
 // const attendanceData = [
 //   {
@@ -35,6 +36,7 @@ const Attendance = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [searchText, setSearchText] = useState(""); // Added for search
   const [filteredData, setFilteredData] = useState([]); // Added for search
+  const [initializing, setInitializing] = useState(true);
 
   const loadAttendanceDataFromTimetable = async () => {
     const timetableString = await AsyncStorage.getItem("timetable");
@@ -110,8 +112,12 @@ const Attendance = () => {
 
   useFocusEffect(
     useCallback(() => {
+      setInitializing(true);
       fetchAllData();
-      return () => {}; // Optional cleanup
+      setInitializing(false);
+      // return () => {
+      //   setInitializing(false);
+      // }; // Optional cleanup
     }, [fetchAllData])
   );
 
@@ -214,6 +220,15 @@ const Attendance = () => {
     }
     init();
   }, []); // or [useruid] if you reload per user
+
+  if (initializing) {
+      return (
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading...</Text>
+          <ActivityIndicator size="large" color="#40E0D0" />
+        </View>
+      );
+    }
 
   return (
     <SafeAreaProvider>
@@ -569,6 +584,17 @@ const styles = StyleSheet.create({
     paddingBottom: 20, // Ensure space for last card
     flexGrow: 1, // Ensures ListEmptyComponent can center if list is short
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#000', // Match your app's background
+  },
+  loadingText: {
+    color: '#40E0D0',
+    fontSize: 18,
+    marginBottom: 20,
+  }
   // ... (your existing styles from Attendance.jsx)
   // Ensure you have headerRow, profileGroup, title, container, etc.s
 });

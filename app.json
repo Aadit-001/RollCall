@@ -1,10 +1,10 @@
 {
   "expo": {
     "name": "RollCall",
-    "slug": "RollCall",
+    "slug": "roll-call",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.jpg",
+    "icon": "./assets/images/rc3.jpeg",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -13,7 +13,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/icon.jpg",
+        "foregroundImage": "./assets/images/rc3.jpeg",
         "backgroundColor": "#ffffff"
       },
       "package": "com.anonymous.RollCall"
@@ -21,7 +21,7 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/icon.jpg"
+      "favicon": "./assets/images/rc3.jpeg"
     },
     "plugins": [
       "expo-router",
@@ -39,7 +39,9 @@
         {
           "iosDeploymentTarget": "13.4",
           "apsEnvMode": "production",
-          "backgroundModes": ["remote-notification"]
+          "backgroundModes": [
+            "remote-notification"
+          ]
         }
       ]
     ],
@@ -51,9 +53,26 @@
         "origin": false
       },
       "eas": {
-        "projectId": "cd48bf0b-43cf-4cb3-bdcc-fcede9ee3e0a"
+        "projectId": "97bbd1ff-583a-4660-90a8-6d2ab14067ab",
+        "build": {
+          "experimental": {
+            "ios": {
+              "appExtensions": [
+                {
+                  "targetName": "NotifeeNotificationServiceExtension",
+                  "bundleIdentifier": "undefined.NotifeeNotificationServiceExtension",
+                  "entitlements": {
+                    "com.apple.security.application-groups": [
+                      "group.undefined.notifee"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        }
       }
     },
-    "owner": "aadit-001"
+    "owner": "harsh002"
   }
 }

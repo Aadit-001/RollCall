@@ -17,7 +17,7 @@ import { Ionicons, MaterialIcons, FontAwesome5 } from "@expo/vector-icons";
 import uuid from "react-native-uuid";
 import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
-import { RichEditor, RichToolbar, actions } from "react-native-pell-rich-editor";
+// import { RichEditor, RichToolbar, actions } from "react-native-pell-rich-editor";
 
 export default function SubjectTopics() {
   const params = useLocalSearchParams();

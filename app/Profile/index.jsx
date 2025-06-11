@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -16,8 +16,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useFocusEffect } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { StatusBar } from "expo-status-bar";
-import { auth } from "../auth/firebaseConfig";
-import { signOut } from "firebase/auth";
+// import { auth } from "../auth/firebaseConfig";
+// import { signOut } from "firebase/auth";
 // import { useRouter } from "expo-router";
 import { Modal } from "react-native";
 import AttendancePercentageChanger from "@/components/AttendancePercentageChanger";

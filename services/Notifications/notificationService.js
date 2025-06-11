@@ -363,9 +363,9 @@ export async function scheduleOrAlertBunkStatus() {
 
     if (canBunk) {
       // Calculate tomorrow at 7 AM  testing comment this
-      const triggerDate = new Date();
-      triggerDate.setDate(triggerDate.getDate() + 1);
-      triggerDate.setHours(7, 0, 0, 0);
+      // const triggerDate = new Date();
+      // triggerDate.setDate(triggerDate.getDate() + 1);
+      // triggerDate.setHours(7, 0, 0, 0);
 
       // for testing use this so that notification can be seen immediately in 1 minute  testoing :- uncomment this
       // const triggerDate = new Date(Date.now() + 1 * 60 * 1000);
@@ -378,7 +378,7 @@ export async function scheduleOrAlertBunkStatus() {
       await notifee.createTriggerNotification(
         {
           id: NOTIFICATION_ID,
-          title: "🎉 Good News! You Can Bunk Tomorrow!",
+          title: "🎉 Good News! You Can Bunk Today!",
           body: "Your attendance is high enough to skip all lectures. Enjoy your day off!",
           data: {
             type: "DAILY_BUNK_ALERT", // Add this to match your filtering logic
@@ -397,22 +397,22 @@ export async function scheduleOrAlertBunkStatus() {
         trigger
       );
 
-      console.log(
-        `Notification scheduled for: ${triggerDate.toLocaleString()}`
-      );
-      Alert.alert(
-        "Bunk Alert Scheduled!",
-        "You can skip all lectures tomorrow. A reminder notification has been set for 7 AM."
-      );
+      // console.log(
+      //   `Notification scheduled for: ${triggerDate.toLocaleString()}`
+      // );
+        // Alert.alert(
+        //   "Bunk Alert Scheduled!",
+        //   "You can skip all lectures tomorrow. A reminder notification has been set for 7 AM."
+        // );
     } else {
-      console.log(`Bunking not possible. Reason: ${reason}`);
-      Alert.alert(
-        "Cannot Bunk Tomorrow",
-        reason // Display the specific reason to the user
-      );
+      // console.log(`Bunking not possible. Reason: ${reason}`);
+      // Alert.alert(
+      //   "Cannot Bunk Tomorrow",
+      //   reason // Display the specific reason to the user
+      // );
     }
   } catch (error) {
-    console.error("Error in scheduleOrAlertBunkStatus:", error);
-    Alert.alert("Error", "Could not set up the bunk notification.");
+    // console.error("Error in scheduleOrAlertBunkStatus:", error);
+    // Alert.alert("Error", "Could not set up the bunk notification.");
   }
 }

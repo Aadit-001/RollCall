@@ -8,9 +8,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useState, useEffect } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import Welcome from "../onboarding/Welcome";
-import { getAuth, onAuthStateChanged } from "firebase/auth";
-import Signin from "../auth/Signin";
-import Register from "../auth/Register";
 
 
 export default function TabLayout() {
@@ -70,8 +67,8 @@ export default function TabLayout() {
   if (initializing) {
     return (
       <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Loading...</Text>
         <ActivityIndicator size="large" color="#40E0D0" />
+        <Text style={styles.loadingText}>Loading...</Text>
       </View>
     );
   }
@@ -79,6 +76,7 @@ export default function TabLayout() {
 
   return (
     <SafeAreaProvider>
+      {/* <SafeAreaView style={styles.container}> */}
       {isOnboardingDone ? (
         // isLoggedIn ? (
           <Tabs
@@ -223,11 +221,17 @@ export default function TabLayout() {
       ): (
           <Welcome />
         )}
+      {/* </SafeAreaView> */}
     </SafeAreaProvider>
   );
 }
 
 const Styles = StyleSheet.create({
+  // container: {
+    // backgroundColor: "#181818",
+    // flex: 0,
+    // backgroundColor: "#121212",
+  // },
   headerTitle: {
     fontSize: 32,
     fontWeight: "bold",

@@ -16,9 +16,10 @@ import { LinearGradient } from "expo-linear-gradient";
 import AttendancePercentageFinder from "@/components/AttendancePercentageFinder";
 import { StatusBar } from "expo-status-bar";
 import { Alert } from "react-native";
-import { getFirestore, doc, getDoc } from "firebase/firestore";
+// import { getFirestore, doc, getDoc } from "firebase/firestore";
 import { Modal } from "react-native";
-import { BarChart } from "react-native-chart-kit";
+// import { BarChart } from "react-native-chart-kit";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 // import { WEEK_DAYS } from "@/constants/timetable";
 
 import {
@@ -284,62 +285,6 @@ const Home = () => {
       subscription.remove();
     };
   }, []); // Empty dependency array ensures this runs only once on mount
-
-  // // Add this useEffect in your index.jsx
-  // useEffect(() => {
-  //   const setupBunkNotifications = async () => {
-  //     try {
-  //       // Automatically check and schedule bunk notification for tomorrow
-  //       await scheduleTomorrowBunkNotification();
-
-  //       console.log("Bunk notifications setup completed");
-  //     } catch (error) {
-  //       console.error("Error setting up bunk notifications:", error);
-  //     }
-  //   };
-
-  //   setupBunkNotifications();
-  // }, []); // Run once when app opens
-
-  // useEffect(() => {
-  //   const handleAppStateChange = (nextAppState) => {
-  //     if (nextAppState === "active") {
-  //       // Re-check and schedule when app becomes active
-  //       scheduleTomorrowBunkNotification();
-  //     }
-  //   };
-
-  //   const subscription = AppState.addEventListener(
-  //     "change",
-  //     handleAppStateChange
-  //   );
-  //   return () => subscription?.remove();
-  // }, []);
-
-  // useEffect(() => {
-  //   const setupNotifications = async () => {
-  //     const hasPermission = await initNotifications();
-  //     if (!hasPermission) {
-  //       // Handle case where user denied permissions
-  //       Alert.alert(
-  //         "Permission Required",
-  //         "Please enable notifications to receive attendance reminders.",
-  //         [
-  //           {
-  //             text: "Cancel",
-  //             onPress: () => console.log("Cancel Pressed"),
-  //             style: "cancel",
-  //           },
-  //           {
-  //             text: "OK",
-  //             onPress: () => console.log("OK Pressed"),
-  //           },
-  //         ]
-  //       );
-  //     }
-  //   };
-  //   setupNotifications();
-  // }, []);
 
   const getCurrentDateString = () => {
     const date = new Date();
@@ -667,52 +612,46 @@ const Home = () => {
     setShowAttendanceFinder(false);
     await loadName();
   }, [loadName]);
-  // const onRefresh = useCallback(async () => {
-  //     setRefreshing(true);
-  //     await fetchUserData();
-  //     setRefreshing(false);
-  //   }, [fetchUserData]);
 
   const loadTimetable = async () => {
     try {
       // First try to get data from AsyncStorage (prioritize local data)
       const data = await AsyncStorage.getItem("timetable");
-      console.log(data);
+      // console.log(data);
 
       if (data) {
         // If data exists in AsyncStorage, use it
         setTimetable(JSON.parse(data).days);
-      } else {
-        // If no data in AsyncStorage, try Firebase
-        const useruid = await AsyncStorage.getItem("userToken"); // Assuming you store user ID here
-        console.log("User ID:", useruid);
+      // } else {
+      //   // If no data in AsyncStorage, try Firebase
+      //   const useruid = await AsyncStorage.getItem("userToken"); // Assuming you store user ID here
+      //   console.log("User ID:", useruid);
 
-        if (useruid) {
-          const db = getFirestore();
-          const docRef = doc(db, "users", useruid);
-          // console.log("Firebase doc ref:", docRef);
-          const docSnap = await getDoc(docRef);
-          // console.log("Firebase data:", docSnap.data());
+      //   if (useruid) {
+      //     const db = getFirestore();
+      //     const docRef = doc(db, "users", useruid);
+      //     // console.log("Firebase doc ref:", docRef);
+      //     const docSnap = await getDoc(docRef);
+      //     // console.log("Firebase data:", docSnap.data());
 
-          if (docSnap.exists() && docSnap.data().timetable) {
-            // If Firebase has data, use it and save to AsyncStorage for future use
-            const firebaseData = docSnap.data().timetable;
-            setTimetable(firebaseData.days);
+      //     if (docSnap.exists() && docSnap.data().timetable) {
+      //       // If Firebase has data, use it and save to AsyncStorage for future use
+      //       const firebaseData = docSnap.data().timetable;
+      //       setTimetable(firebaseData.days);
 
-            // Save to AsyncStorage to avoid Firebase queries next time
-            await AsyncStorage.setItem(
-              "timetable",
-              JSON.stringify(firebaseData)
-            );
-          } else {
-            // If neither source has data, initialize empty structure
-            setTimetable(WEEK_DAYS.map((day) => ({ day, subjects: [] })));
-          }
+      //       // Save to AsyncStorage to avoid Firebase queries next time
+      //       await AsyncStorage.setItem(
+      //         "timetable",
+      //         JSON.stringify(firebaseData)
+      //       );
+      //     } else {
+      //       // If neither source has data, initialize empty structure
+      //       setTimetable(WEEK_DAYS.map((day) => ({ day, subjects: [] })));
+      //     }
         } else {
           // If no user ID available, use default empty structure
           setTimetable(WEEK_DAYS.map((day) => ({ day, subjects: [] })));
         }
-      }
     } catch (error) {
       // console.error("Error loading timetable:", error);
       // Fallback to empty structure on any errors
@@ -939,15 +878,8 @@ Attendance will update on the Attendance Screen.`
     }
   };
 
-  // useEffect(() => {
-  //   AsyncStorage.getItem("userName").then((name) => {
-  //     if (name) {
-  //       setName(name);
-  //     }
-  //   });
-  // }, []);
-
   return (
+    <SafeAreaProvider>
     <SafeAreaView style={styles.container}>
       <StatusBar style="light" backgroundColor="#121212" />
       {showAttendanceFinder && (
@@ -1132,6 +1064,7 @@ Attendance will update on the Attendance Screen.`
         onClose={() => setShowBunkModal(false)}
       />
     </SafeAreaView>
+    </SafeAreaProvider>
   );
 };
 
@@ -1334,6 +1267,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 3, // For Android shadow
+    borderLeftWidth: 3,
+    borderLeftColor: "#3fa4ff",
   },
   lectureInfoContainer: {
     flex: 1, // Allows this container to take up available space

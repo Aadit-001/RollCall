@@ -6,8 +6,7 @@ import {
   TouchableOpacity,
   Alert,
   Platform,
-  Modal,
-  TextInput,} from "react-native"
+  Modal,} from "react-native"
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StatusBar } from "expo-status-bar";
 import { LinearGradient } from "expo-linear-gradient";

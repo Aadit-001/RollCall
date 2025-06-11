@@ -16,7 +16,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
-import { ActivityIndicator } from "react-native";
 
 // const attendanceData = [
 //   {
@@ -91,7 +90,7 @@ const Attendance = () => {
   };
 
   const fetchAllData = useCallback(async () => {
-    setIsLoading(true);
+    // setIsLoading(true);
     try {
       const loadedData = await loadAttendanceDataFromTimetable();
       setSubjectAttendanceData(loadedData);
@@ -105,16 +104,16 @@ const Attendance = () => {
     } catch (error) {
       console.error("Error fetching data for Attendance screen:", error);
     } finally {
-      setIsLoading(false);
+      // setIsLoading(false);
       setRefreshTrigger((prev) => prev + 1); // Trigger card refresh
     }
   }, []);
 
   useFocusEffect(
     useCallback(() => {
-      setInitializing(true);
+      // setInitializing(true);
       fetchAllData();
-      setInitializing(false);
+      // setInitializing(false);
       // return () => {
       //   setInitializing(false);
       // }; // Optional cleanup
@@ -221,14 +220,14 @@ const Attendance = () => {
     init();
   }, []); // or [useruid] if you reload per user
 
-  if (initializing) {
-      return (
-        <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading...</Text>
-          <ActivityIndicator size="large" color="#40E0D0" />
-        </View>
-      );
-    }
+  // if (initializing) {
+  //     return (
+  //       <View style={styles.loadingContainer}>
+  //         <Text style={styles.loadingText}>Loading...</Text>
+  //         <ActivityIndicator size="large" color="#40E0D0" />
+  //       </View>
+  //     );
+  //   }
 
   return (
     <SafeAreaProvider>

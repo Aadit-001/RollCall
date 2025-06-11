@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { Link } from "expo-router";
 import { images } from "@/constants/images";
-import AsyncStorage from '@react-native-async-storage/async-storage';
+// import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Welcome() {
   return (

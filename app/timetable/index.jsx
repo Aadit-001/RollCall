@@ -18,13 +18,13 @@ import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import {
-  getFirestore,
-  doc,
-  updateDoc,
-  setDoc,
-  getDoc,
-} from "firebase/firestore";
+// import {
+//   getFirestore,
+//   doc,
+//   updateDoc,
+//   setDoc,
+//   getDoc,
+// } from "firebase/firestore";
 import {
   initNotifications,
   scheduleWeeklyLectures,
@@ -67,6 +67,7 @@ export default function Timetable() {
   const [showEndTimePicker, setShowEndTimePicker] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   // On mount: init notifications & load data
   useEffect(() => {
@@ -79,21 +80,40 @@ export default function Timetable() {
   const loadTimetable = async () => {
     try {
       // First try to get data from AsyncStorage (prioritize local data)
+      // setIsLoading(true);
       const data = await AsyncStorage.getItem("timetable");
-      console.log(data);
+      // console.log(data);
+      const parsedData = data ? JSON.parse(data) : null;
 
-      if (data) {
-        // If data exists in AsyncStorage, use it
-        setTimetable(JSON.parse(data).days);
+      // Use requestAnimationFrame to batch the state updates
+    requestAnimationFrame(() => {
+      if (parsedData) {
+        setTimetable(parsedData.days);
       } else {
         setTimetable(WEEK_DAYS.map((day) => ({ day, subjects: [] })));
       }
-    } catch (error) {
-      // console.error("Error loading timetable:", error);
-      // Fallback to empty structure on any errors
+      setIsLoading(false);
+    });
+  } catch (error) {
+    console.error("Error loading timetable:", error);
+    requestAnimationFrame(() => {
       setTimetable(WEEK_DAYS.map((day) => ({ day, subjects: [] })));
-    }
+      setIsLoading(false);
+    });
+  }
   };
+
+  if (isLoading) {
+    return (
+      <SafeAreaProvider>
+        <SafeAreaView style={styles.loadingContainer}>
+          <StatusBar style="light" backgroundColor="#121212" />
+          <ActivityIndicator size="large" color="#40E0D0" />
+          <Text style={styles.loadingText}>Loading...</Text>
+        </SafeAreaView>
+      </SafeAreaProvider>
+    );
+  }
 
   const handleStartTimeChange = (event, selectedTime) => {
     setShowStartTimePicker(Platform.OS === "ios");
@@ -385,8 +405,8 @@ export default function Timetable() {
 
   return (
     <SafeAreaProvider>
+      <StatusBar style="light" backgroundColor="#121212" />
       <SafeAreaView style={styles.container}>
-        <StatusBar style="light" backgroundColor="#121212" />
         <LinearGradient
           colors={["#121212", "#121212"]}
           style={styles.gradientBackground}
@@ -568,7 +588,9 @@ export default function Timetable() {
                 </View>
               );
             }}
+
           />
+
         </LinearGradient>
       </SafeAreaView>
     </SafeAreaProvider>
@@ -576,6 +598,19 @@ export default function Timetable() {
 }
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: '#121212',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  loadingText: {
+    color: '#40E0D0',
+    marginTop: 20,
+    fontSize: 16,
+    textAlign: 'center',
+  },
   container: {
     flex: 1,
     backgroundColor: "#121212",

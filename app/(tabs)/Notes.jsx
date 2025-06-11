@@ -13,7 +13,7 @@ import {
   Animated,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Ionicons, MaterialIcons, FontAwesome5 } from "@expo/vector-icons";
+import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
 import { useRouter, useFocusEffect } from "expo-router";
 import uuid from "react-native-uuid";
 import { LinearGradient } from "expo-linear-gradient";

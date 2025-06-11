@@ -5,6 +5,8 @@ import notifee, {
   TriggerType,
   RepeatFrequency,
 } from "@notifee/react-native";
+import { Alert } from "react-native"; // <-- Add this import
+
 import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -68,8 +70,8 @@ export async function initNotifications() {
       },
     });
 
-    if (settings.authorizationStatus !== 'authorized') {
-      console.warn('Notification permissions not granted');
+    if (settings.authorizationStatus !== "authorized") {
+      console.warn("Notification permissions not granted");
       return false;
     }
 
@@ -82,8 +84,8 @@ export async function initNotifications() {
         visibility: AndroidVisibility.PUBLIC,
         vibrationPattern: [0, 250, 250, 250],
         lights: true,
-        lightColor: '#FF231F7C',
-        sound: 'default',
+        lightColor: "#FF231F7C",
+        sound: "default",
         bypassDnd: true,
         showBadge: true,
         allowBackgroundProcessing: true,
@@ -91,7 +93,7 @@ export async function initNotifications() {
         lockscreenVisibility: AndroidVisibility.PUBLIC,
         vibration: true,
         fullScreenIntent: true,
-        groupId: 'rollcall_group',
+        groupId: "rollcall_group",
         groupSummary: true,
       });
     }
@@ -134,23 +136,24 @@ export async function initNotifications() {
             hiddenPreviewShowTitle: true,
             hiddenPreviewBody: true,
             hiddenPreviewShowSubtitle: true,
-            hiddenPreviewFormat: 'default',
-            hiddenPreviewSummaryArgument: 'RollCall',
+            hiddenPreviewFormat: "default",
+            hiddenPreviewSummaryArgument: "RollCall",
             hiddenPreviewSummaryArgumentCount: 1,
             customDismissAction: true,
             carPlay: true,
             criticalAlert: true,
-            sound: 'default',
+            sound: "default",
             announcement: true,
             foreground: true,
           },
         },
       ]);
     }
-    await scheduleDailyBunkNotification();
+    // await scheduleDailyBunkNotification();
+    await scheduleOrAlertBunkStatus();
     return true;
   } catch (error) {
-    console.error('Error initializing notifications:', error);
+    console.error("Error initializing notifications:", error);
     return false;
   }
 }
@@ -178,7 +181,20 @@ function nextOccurrence(weekdayIndex, timeStr) {
 // Schedule weekly repeating notifications for each lecture
 export async function scheduleWeeklyLectures(lectures) {
   // Clear existing notifications to avoid duplicates
-  await notifee.cancelAllNotifications();
+  // await notifee.cancelAllNotifications();
+
+  // Clear existing timetable notifications to avoid duplicates
+  const existingNotifications = await notifee.getTriggerNotifications();
+  const timetableNotifications = existingNotifications.filter(
+    (notif) =>
+      !notif.notification.data?.type ||
+      notif.notification.data.type !== "DAILY_BUNK_ALERT"
+  );
+
+  // Cancel only timetable notifications
+  for (const notif of timetableNotifications) {
+    await notifee.cancelTriggerNotification(notif.notification.id);
+  }
 
   const weekdayMap = {
     Sunday: 0,
@@ -240,7 +256,7 @@ export async function scheduleWeeklyLectures(lectures) {
                 launchActivity: "none", // Prevent app from opening
               },
               color: "gray",
-            },  
+            },
           ],
         },
         ios: {
@@ -258,100 +274,145 @@ export async function scheduleWeeklyLectures(lectures) {
   }
 }
 
-export async function canBunkAllLecturesToday() {
+// import AsyncStorage from "@react-native-async-storage/async-storage";
+
+// Helper function to get the name of tomorrow's day
+const getTomorrow = () => {
+  const days = [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+  ];
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  return days[tomorrow.getDay()];
+};
+
+/**
+ * Checks if all lectures for the next day can be skipped based on attendance criteria.
+ * @returns {Promise<{canBunk: boolean, reason: string}>}
+ */
+export async function canBunkAllLecturesTomorrow() {
   try {
-    const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
-    const timetableData = await AsyncStorage.getItem("timetable");
-    
-    if (!timetableData) return false;
-    
-    const timetable = JSON.parse(timetableData);
-    const todayLectures = timetable.days?.find(d => d.day === today)?.subjects || [];
-    
-    if (todayLectures.length === 0) return false;
-    
-    // Check if all lectures can be bunked (before first lecture)
-    const now = new Date();
-    const currentTime = now.getHours() * 60 + now.getMinutes();
-    
-    const sortedLectures = [...todayLectures].sort((a, b) => {
-      const [aHours, aMins] = a.startTime.split(':').map(Number);
-      const [bHours, bMins] = b.startTime.split(':').map(Number);
-      return (aHours * 60 + aMins) - (bHours * 60 + bMins);
-    });
-    
-    const firstLecture = sortedLectures[0];
-    const [firstStartHour, firstStartMin] = firstLecture.startTime.split(':').map(Number);
-    const firstStartTime = firstStartHour * 60 + firstStartMin;
-    
-    return currentTime < firstStartTime;
+    const tomorrowDay = getTomorrow();
+    const timetableString = await AsyncStorage.getItem("timetable");
+    const criteriaString = await AsyncStorage.getItem("percentage");
+
+    if (!timetableString) {
+      return { canBunk: false, reason: "Timetable not found." };
+    }
+    if (!criteriaString) {
+      return {
+        canBunk: false,
+        reason: "Attendance percentage criteria not set.",
+      };
+    }
+
+    const timetable = JSON.parse(timetableString);
+    const attendanceCriteria = parseInt(criteriaString, 10);
+
+    const tomorrowLectures =
+      timetable.days?.find((d) => d.day === tomorrowDay)?.subjects || [];
+
+    if (tomorrowLectures.length === 0) {
+      return { canBunk: false, reason: "No lectures scheduled for tomorrow." };
+    }
+
+    // Check if skipping any of tomorrow's lectures drops attendance below the criteria
+    for (const lecture of tomorrowLectures) {
+      const attended = lecture.attendedClasses || 0;
+      const total = lecture.totalClasses || 0;
+
+      // Calculate what the percentage would be AFTER skipping this class
+      const newTotal = total + 1;
+      const futurePercentage = (attended / newTotal) * 100;
+
+      if (futurePercentage < attendanceCriteria) {
+        return {
+          canBunk: false,
+          reason: `Cannot bunk. Attendance for ${
+            lecture.name
+          } would drop to ${futurePercentage.toFixed(1)}%.`,
+        };
+      }
+    }
+
+    // If all checks pass, the user can bunk
+    return {
+      canBunk: true,
+      reason: "All lectures for tomorrow can be skipped.",
+    };
   } catch (error) {
-    console.error("Error checking bunk status:", error);
-    return false;
+    console.error("Error in canBunkAllLecturesTomorrow:", error);
+    return { canBunk: false, reason: "An error occurred while checking." };
   }
 }
 
-// Add this function to schedule the daily bunk notification
-export async function scheduleDailyBunkNotification() {
+export async function scheduleOrAlertBunkStatus() {
+  const NOTIFICATION_ID = "tomorrow-bunk-alert";
+
   try {
-    // Cancel any existing daily notifications
-    await notifee.cancelAllNotifications({ tag: 'DAILY_BUNK_ALERT' });
+    // First, cancel any previously scheduled bunk alert to avoid duplicates
+    await notifee.cancelNotification(NOTIFICATION_ID);
 
-    // Calculate next 1:15 AM
-    const now = new Date();
-    let triggerDate = new Date();
-    triggerDate.setHours(1, 45, 0, 0);
-    
-    // If it's already past 1:15 AM today, schedule for tomorrow
-    if (now >= triggerDate) {
+    const { canBunk, reason } = await canBunkAllLecturesTomorrow();
+
+    if (canBunk) {
+      // Calculate tomorrow at 7 AM  testing comment this
+      const triggerDate = new Date();
       triggerDate.setDate(triggerDate.getDate() + 1);
+      triggerDate.setHours(7, 0, 0, 0);
+
+      // for testing use this so that notification can be seen immediately in 1 minute  testoing :- uncomment this
+      // const triggerDate = new Date(Date.now() + 1 * 60 * 1000);
+
+      const trigger = {
+        type: TriggerType.TIMESTAMP,
+        timestamp: triggerDate.getTime(),
+      };
+
+      await notifee.createTriggerNotification(
+        {
+          id: NOTIFICATION_ID,
+          title: "🎉 Good News! You Can Bunk Tomorrow!",
+          body: "Your attendance is high enough to skip all lectures. Enjoy your day off!",
+          data: {
+            type: "DAILY_BUNK_ALERT", // Add this to match your filtering logic
+          },
+          android: {
+            channelId: "rollcall",
+            pressAction: { id: "default" },
+            importance: AndroidImportance.HIGH,
+            color: "#4CAF50",
+          },
+          ios: {
+            sound: "default",
+            categoryId: "ROLLCALL",
+          },
+        },
+        trigger
+      );
+
+      console.log(
+        `Notification scheduled for: ${triggerDate.toLocaleString()}`
+      );
+      Alert.alert(
+        "Bunk Alert Scheduled!",
+        "You can skip all lectures tomorrow. A reminder notification has been set for 7 AM."
+      );
+    } else {
+      console.log(`Bunking not possible. Reason: ${reason}`);
+      Alert.alert(
+        "Cannot Bunk Tomorrow",
+        reason // Display the specific reason to the user
+      );
     }
-
-    const trigger = {
-      type: TriggerType.TIMESTAMP,
-      timestamp: triggerDate.getTime(),
-      repeatFrequency: RepeatFrequency.DAILY,
-    };
-
-    await notifee.createTriggerNotification(
-      {
-        id: 'daily-bunk-alert',
-        title: '🎉 Good News!',
-        body: 'You can bunk all lectures today! Tap to view details.',
-        android: {
-          channelId: "rollcall",
-          pressAction: {
-            id: "default",
-            launchActivity: "default",
-          },
-          smallIcon: 'ic_notification',
-          color: '#4CAF50',
-          tag: 'DAILY_BUNK_ALERT',
-          autoCancel: true,
-          showWhen: true,
-          importance: AndroidImportance.HIGH,
-        },
-        ios: {
-          sound: 'default',
-          categoryId: "ROLLCALL",
-          threadId: 'daily-bunk-alert',
-          foregroundPresentationOptions: {
-            badge: true,
-            sound: true,
-            banner: true,
-            list: true,
-          },
-        },
-        data: {
-          type: 'DAILY_BUNK_ALERT',
-          timestamp: Date.now().toString(),
-        },
-      },
-      trigger
-    );
-
-    console.log('Scheduled daily bunk notification');
   } catch (error) {
-    console.error('Error scheduling daily bunk notification:', error);
+    console.error("Error in scheduleOrAlertBunkStatus:", error);
+    Alert.alert("Error", "Could not set up the bunk notification.");
   }
 }

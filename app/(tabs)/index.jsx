@@ -17,13 +17,16 @@ import AttendancePercentageFinder from "@/components/AttendancePercentageFinder"
 import { StatusBar } from "expo-status-bar";
 import { Alert } from "react-native";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
-import { Modal } from 'react-native';
-import { BarChart } from 'react-native-chart-kit';
+import { Modal } from "react-native";
+import { BarChart } from "react-native-chart-kit";
 // import { WEEK_DAYS } from "@/constants/timetable";
 
 import {
   initNotifications,
   scheduleWeeklyLectures,
+  scheduleTomorrowBunkNotification,
+  scheduleOrAlertBunkStatus,
+  // scheduleOrAlertBunkStatusForImmediateTest,
 } from "@/services/Notifications/notificationService";
 
 const getToday = () => {
@@ -49,21 +52,23 @@ const getCurrentDateString = () => {
 
 const canBunkAllLectures = async (lectures) => {
   if (!lectures || lectures.length === 0) return false;
-  
+
   const now = new Date();
   const currentTime = now.getHours() * 60 + now.getMinutes();
-  
+
   // Sort lectures by start time to find the first lecture
   const sortedLectures = [...lectures].sort((a, b) => {
-    const [aHours, aMins] = a.startTime.split(':').map(Number);
-    const [bHours, bMins] = b.startTime.split(':').map(Number);
-    return (aHours * 60 + aMins) - (bHours * 60 + bMins);
+    const [aHours, aMins] = a.startTime.split(":").map(Number);
+    const [bHours, bMins] = b.startTime.split(":").map(Number);
+    return aHours * 60 + aMins - (bHours * 60 + bMins);
   });
-  
+
   const firstLecture = sortedLectures[0];
-  const [firstStartHour, firstStartMin] = firstLecture.startTime.split(':').map(Number);
+  const [firstStartHour, firstStartMin] = firstLecture.startTime
+    .split(":")
+    .map(Number);
   const firstStartTime = firstStartHour * 60 + firstStartMin;
-  
+
   // Check if current time is before first lecture
   if (currentTime >= firstStartTime) {
     return false;
@@ -71,10 +76,11 @@ const canBunkAllLectures = async (lectures) => {
 
   // Get the required attendance percentage
   try {
-    const requiredPercentage = parseFloat(await AsyncStorage.getItem("percentage")) || 75; // Default to 75% if not set
-    
+    const requiredPercentage =
+      parseFloat(await AsyncStorage.getItem("percentage")) || 75; // Default to 75% if not set
+
     // Check if any lecture has attendance below the required percentage
-    const hasLowAttendance = sortedLectures.some(lecture => {
+    const hasLowAttendance = sortedLectures.some((lecture) => {
       const attended = lecture.attendedClasses || 0;
       const total = lecture.totalClasses || 1; // Avoid division by zero
       const attendancePercentage = (attended / total) * 100;
@@ -98,14 +104,15 @@ const BunkModal = ({ visible, lectures, onClose }) => {
       bySubject: {},
     };
 
-    lectures.forEach(lecture => {
-      const [startH, startM] = lecture.startTime.split(':').map(Number);
-      const [endH, endM] = lecture.endTime.split(':').map(Number);
-      const duration = (endH * 60 + endM) - (startH * 60 + startM);
+    lectures.forEach((lecture) => {
+      const [startH, startM] = lecture.startTime.split(":").map(Number);
+      const [endH, endM] = lecture.endTime.split(":").map(Number);
+      const duration = endH * 60 + endM - (startH * 60 + startM);
       const hours = duration / 60;
-      
+
       stats.totalHours += hours;
-      stats.bySubject[lecture.name] = (stats.bySubject[lecture.name] || 0) + hours;
+      stats.bySubject[lecture.name] =
+        (stats.bySubject[lecture.name] || 0) + hours;
     });
 
     return stats;
@@ -114,9 +121,13 @@ const BunkModal = ({ visible, lectures, onClose }) => {
   const stats = calculateBunkStats();
   const chartData = {
     labels: Object.keys(stats.bySubject),
-    datasets: [{
-      data: Object.values(stats.bySubject).map(hours => Math.round(hours * 10) / 10)
-    }]
+    datasets: [
+      {
+        data: Object.values(stats.bySubject).map(
+          (hours) => Math.round(hours * 10) / 10
+        ),
+      },
+    ],
   };
 
   return (
@@ -130,9 +141,10 @@ const BunkModal = ({ visible, lectures, onClose }) => {
         <View style={styles.modalView}>
           <Text style={styles.modalTitle}>🎉 Good News!</Text>
           <Text style={styles.modalSubtitle}>
-            You can bunk all {stats.totalLectures} lectures today and save {stats.totalHours.toFixed(1)} hours!
+            You can bunk all {stats.totalLectures} lectures today and save{" "}
+            {stats.totalHours.toFixed(1)} hours!
           </Text>
-          
+
           {/* <View style={{ width: '100%', marginVertical: 15 }}>
             <Text style={styles.chartTitle}>Time Saved by Subject</Text>
             <BarChart
@@ -167,7 +179,9 @@ const BunkModal = ({ visible, lectures, onClose }) => {
               <Text style={styles.statLabel}>Lectures</Text>
             </View>
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>{stats.totalHours.toFixed(1)}h</Text>
+              <Text style={styles.statValue}>
+                {stats.totalHours.toFixed(1)}h
+              </Text>
               <Text style={styles.statLabel}>Total Time</Text>
             </View>
             <View style={styles.statItem}>
@@ -176,10 +190,7 @@ const BunkModal = ({ visible, lectures, onClose }) => {
             </View>
           </View>
 
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={onClose}
-          >
+          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
             <Text style={styles.closeButtonText}>Got it!</Text>
           </TouchableOpacity>
         </View>
@@ -188,7 +199,6 @@ const BunkModal = ({ visible, lectures, onClose }) => {
   );
 };
 
-
 const Home = () => {
   const [lectures, setLectures] = useState([]);
   const [hasTimetable, setHasTimetable] = useState(false);
@@ -196,7 +206,7 @@ const Home = () => {
   const [showAttendanceFinder, setShowAttendanceFinder] = useState(false);
   const [name, setName] = useState("");
   const [todayy, setTodayy] = useState("");
-  
+
   const [showBunkModal, setShowBunkModal] = useState(false);
   const router = useRouter();
 
@@ -205,16 +215,20 @@ const Home = () => {
       try {
         const today = getToday();
         const timetableData = await AsyncStorage.getItem("timetable");
-        
+
         if (timetableData) {
           const timetable = JSON.parse(timetableData);
-          const todayLectures = timetable.days?.find(d => d.day === today)?.subjects || [];
-          
-          if (todayLectures.length > 0 && await canBunkAllLectures(todayLectures)) {
+          const todayLectures =
+            timetable.days?.find((d) => d.day === today)?.subjects || [];
+
+          if (
+            todayLectures.length > 0 &&
+            (await canBunkAllLectures(todayLectures))
+          ) {
             // Check if we've shown the modal today
             const lastShown = await AsyncStorage.getItem("lastBunkModalShown");
             const todayStr = new Date().toDateString();
-            
+
             if (lastShown !== todayStr) {
               setShowBunkModal(true);
               await AsyncStorage.setItem("lastBunkModalShown", todayStr);
@@ -225,7 +239,7 @@ const Home = () => {
         console.error("Error checking bunk status:", error);
       }
     };
-  
+
     checkBunkStatus();
   }, []);
 
@@ -239,6 +253,68 @@ const Home = () => {
       await loadTimetable();
     })();
   }, []);
+
+  useEffect(() => {
+    // CORRECT: Use an Immediately Invoked Function Expression (IIFE)
+    (async () => {
+      try {
+        console.log("Initial check for bunk status...");
+        await scheduleOrAlertBunkStatus();
+      } catch (error) {
+        console.error("Error during initial bunk status check:", error);
+      }
+    })();
+
+    // Optional: Re-run the check when the app returns to the foreground
+    const subscription = AppState.addEventListener("change", (nextAppState) => {
+      if (nextAppState === "active") {
+        (async () => {
+          try {
+            console.log("App is active, re-checking bunk status for tomorrow.");
+            await scheduleOrAlertBunkStatus();
+          } catch (error) {
+            console.error("Error during foreground bunk status check:", error);
+          }
+        })();
+      }
+    });
+
+    // The cleanup function for the AppState listener
+    return () => {
+      subscription.remove();
+    };
+  }, []); // Empty dependency array ensures this runs only once on mount
+
+  // // Add this useEffect in your index.jsx
+  // useEffect(() => {
+  //   const setupBunkNotifications = async () => {
+  //     try {
+  //       // Automatically check and schedule bunk notification for tomorrow
+  //       await scheduleTomorrowBunkNotification();
+
+  //       console.log("Bunk notifications setup completed");
+  //     } catch (error) {
+  //       console.error("Error setting up bunk notifications:", error);
+  //     }
+  //   };
+
+  //   setupBunkNotifications();
+  // }, []); // Run once when app opens
+
+  // useEffect(() => {
+  //   const handleAppStateChange = (nextAppState) => {
+  //     if (nextAppState === "active") {
+  //       // Re-check and schedule when app becomes active
+  //       scheduleTomorrowBunkNotification();
+  //     }
+  //   };
+
+  //   const subscription = AppState.addEventListener(
+  //     "change",
+  //     handleAppStateChange
+  //   );
+  //   return () => subscription?.remove();
+  // }, []);
 
   // useEffect(() => {
   //   const setupNotifications = async () => {
@@ -506,7 +582,7 @@ const Home = () => {
       subscription.remove();
     };
   }, []);
-  
+
   useFocusEffect(
     useCallback(() => {
       const checkAttendancePercentage = async () => {
@@ -588,9 +664,9 @@ const Home = () => {
   );
 
   const handleAttendanceFinderClose = useCallback(async () => {
-      setShowAttendanceFinder(false);
-      await loadName();
-    }, [loadName]);
+    setShowAttendanceFinder(false);
+    await loadName();
+  }, [loadName]);
   // const onRefresh = useCallback(async () => {
   //     setRefreshing(true);
   //     await fetchUserData();
@@ -875,11 +951,9 @@ Attendance will update on the Attendance Screen.`
     <SafeAreaView style={styles.container}>
       <StatusBar style="light" backgroundColor="#121212" />
       {showAttendanceFinder && (
-        <AttendancePercentageFinder
-          onClose={handleAttendanceFinderClose}
-        />
+        <AttendancePercentageFinder onClose={handleAttendanceFinderClose} />
       )}
-      
+
       <View style={styles.headerRow}>
         <View style={styles.profileGroup}>
           <TouchableOpacity
@@ -1052,7 +1126,7 @@ Attendance will update on the Attendance Screen.`
       </TouchableOpacity> */}
 
       {/* <View style={styles.bottomNav} /> */}
-      <BunkModal 
+      <BunkModal
         visible={showBunkModal}
         lectures={lectures}
         onClose={() => setShowBunkModal(false)}
@@ -1364,83 +1438,83 @@ const styles = StyleSheet.create({
   },
   centeredView: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.7)",
   },
   modalView: {
     margin: 20,
-    backgroundColor: '#1e1e1e',
+    backgroundColor: "#1e1e1e",
     borderRadius: 20,
     padding: 25,
-    alignItems: 'center',
-    shadowColor: '#000',
+    alignItems: "center",
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 2
+      height: 2,
     },
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 5,
-    width: '90%',
-    maxWidth: 350
+    width: "90%",
+    maxWidth: 350,
   },
   modalTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 8,
-    color: '#fff',
-    textAlign: 'center'
+    color: "#fff",
+    textAlign: "center",
   },
   modalSubtitle: {
     fontSize: 16,
     marginBottom: 15,
-    color: '#ccc',
-    textAlign: 'center'
+    color: "#ccc",
+    textAlign: "center",
   },
   chartTitle: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     marginBottom: 10,
-    textAlign: 'center'
+    textAlign: "center",
   },
   statsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    width: '100%',
+    flexDirection: "row",
+    justifyContent: "space-around",
+    width: "100%",
     marginVertical: 15,
     padding: 10,
-    backgroundColor: '#2c2c2e',
-    borderRadius: 12
+    backgroundColor: "#2c2c2e",
+    borderRadius: 12,
   },
   statItem: {
-    alignItems: 'center',
-    padding: 10
+    alignItems: "center",
+    padding: 10,
   },
   statValue: {
-    color: '#3fa4ff',
+    color: "#3fa4ff",
     fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 4
+    fontWeight: "bold",
+    marginBottom: 4,
   },
   statLabel: {
-    color: '#aaa',
-    fontSize: 12
+    color: "#aaa",
+    fontSize: 12,
   },
   closeButton: {
-    backgroundColor: '#3fa4ff',
+    backgroundColor: "#3fa4ff",
     borderRadius: 12,
     padding: 12,
-    width: '100%',
-    alignItems: 'center',
-    marginTop: 10
+    width: "100%",
+    alignItems: "center",
+    marginTop: 10,
   },
   closeButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16
-  }
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
   // Removed unused styles: scrolle, header, addTTBtn, addTTBtnText, bottomNav, navIcon, attendanceContainer, headerTitle, headerText
   // The following styles seem to be remnants or duplicates and are not directly used by the main content structure visible:
   // header, headerTitle, headerText were removed as they appear unused or superseded by headerRow group.

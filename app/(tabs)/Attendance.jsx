@@ -60,11 +60,11 @@ const Attendance = () => {
             }
             return acc;
           }, {});
-          console.log("Subjects data loaded from timetable:", subjectsData);
+          // console.log("Subjects data loaded from timetable:", subjectsData);
           return subjectsData;
         }
       } catch (e) {
-        console.error("Failed to parse timetable data:", e);
+        // console.error("Failed to parse timetable data:", e);
         return {}; // Return empty on parsing error
       }
     }
@@ -74,7 +74,7 @@ const Attendance = () => {
     try {
       // First try to get data from AsyncStorage (prioritize local data)
       const data = await AsyncStorage.getItem("timetable");
-      console.log(data);
+      // console.log(data);
 
       if (data) {
         // If data exists in AsyncStorage, use it
@@ -102,7 +102,7 @@ const Attendance = () => {
         setAttendanceCriteria(75); // Default
       }
     } catch (error) {
-      console.error("Error fetching data for Attendance screen:", error);
+      // console.error("Error fetching data for Attendance screen:", error);
     } finally {
       // setIsLoading(false);
       setRefreshTrigger((prev) => prev + 1); // Trigger card refresh
@@ -130,7 +130,7 @@ const Attendance = () => {
       },
     };
     setSubjectAttendanceData(updatedData);
-    console.log(`${subjectName} updated: ${newAttended}/${newTotal}`);
+    // console.log(`${subjectName} updated: ${newAttended}/${newTotal}`);
 
     // Now, persist this change back to AsyncStorage by updating the timetable
     try {
@@ -158,18 +158,18 @@ const Attendance = () => {
 
           if (subjectUpdated) {
             await AsyncStorage.setItem("timetable", JSON.stringify(timetable));
-            console.log(
-              `Timetable in AsyncStorage updated for ${subjectName}.`
-            );
+            // console.log(
+            //   `Timetable in AsyncStorage updated for ${subjectName}.`
+            // );
           } else {
-            console.warn(
-              `Subject ${subjectName} not found in timetable to update counts.`
-            );
+            // console.warn(
+            //   `Subject ${subjectName} not found in timetable to update counts.`
+            // );
           }
         }
       }
     } catch (error) {
-      console.error("Failed to save updated attendance to timetable:", error);
+      // console.error("Failed to save updated attendance to timetable:", error);
     }
   };
 
@@ -214,7 +214,7 @@ const Attendance = () => {
       try {
         await loadTimetable();
       } catch (err) {
-        console.error("Failed to load timetable:", err);
+        // console.error("Failed to load timetable:", err);
       }
     }
     init();

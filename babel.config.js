@@ -11,11 +11,11 @@ module.exports = function(api) {
   };
 };
 
-module.exports = {
-  presets: ['module:metro-react-native-babel-preset'],
-  env: {
-    production: {
-      plugins: ['transform-remove-console']
-    }
-  }
-};
+// module.exports = {
+//   presets: ['module:metro-react-native-babel-preset'],
+//   env: {
+//     production: {
+//       plugins: ['transform-remove-console']
+//     }
+//   }
+// };

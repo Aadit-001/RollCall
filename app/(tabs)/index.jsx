@@ -76,23 +76,43 @@ const canBunkAllLectures = async (lectures) => {
   }
 
   // Get the required attendance percentage
-  try {
-    const requiredPercentage =
-      parseFloat(await AsyncStorage.getItem("percentage")) || 75; // Default to 75% if not set
+  const today = getToday(); // You'll need to implement getToday() similar to getTomorrow()
+    const timetableString = await AsyncStorage.getItem("timetable");
+    const criteriaString = await AsyncStorage.getItem("percentage");
 
-    // Check if any lecture has attendance below the required percentage
-    const hasLowAttendance = sortedLectures.some((lecture) => {
-      const attended = lecture.attendedClasses || 0;
-      const total = lecture.totalClasses || 1; // Avoid division by zero
-      const attendancePercentage = (attended / total) * 100;
-      return attendancePercentage < requiredPercentage;
-    });
+    if (!timetableString) {
+        return false;
+    }
+    if (!criteriaString) {
+        return false;
+    }
 
-    return !hasLowAttendance;
-  } catch (error) {
-    console.error("Error checking attendance percentage:", error);
-    return false; // Be safe - don't allow bunking if we can't verify attendance
-  }
+    const timetable = JSON.parse(timetableString);
+    const attendanceCriteria = parseInt(criteriaString, 10);
+
+    const todaysLectures = 
+        timetable.days?.find(d => d.day === today)?.subjects || [];
+
+    if (todaysLectures.length === 0) {
+        return false;
+    }
+
+    // Check if skipping any of today's lectures would drop attendance below criteria
+    for (const lecture of todaysLectures) {
+        const attended = lecture.attendedClasses || 0;
+        const total = lecture.totalClasses || 0;
+
+        // Calculate what the percentage would be AFTER skipping this class
+        const newTotal = total + 1;
+        const futurePercentage = (attended / newTotal) * 100;
+
+        if (futurePercentage < attendanceCriteria) {
+            return false;
+        }
+    }
+
+    // If all checks pass, the user can bunk
+    return true;
 };
 
 const BunkModal = ({ visible, lectures, onClose }) => {
@@ -237,7 +257,7 @@ const Home = () => {
           }
         }
       } catch (error) {
-        console.error("Error checking bunk status:", error);
+        // console.error("Error checking bunk status:", error);
       }
     };
 
@@ -246,7 +266,7 @@ const Home = () => {
 
   useEffect(() => {
     const todayDate = getToday();
-    console.log(todayDate);
+    // console.log(todayDate);
     setTodayy(todayDate.toString());
     (async () => {
       await loadName();
@@ -262,7 +282,7 @@ const Home = () => {
         console.log("Initial check for bunk status...");
         await scheduleOrAlertBunkStatus();
       } catch (error) {
-        console.error("Error during initial bunk status check:", error);
+        // console.error("Error during initial bunk status check:", error);
       }
     })();
 
@@ -271,10 +291,10 @@ const Home = () => {
       if (nextAppState === "active") {
         (async () => {
           try {
-            console.log("App is active, re-checking bunk status for tomorrow.");
+            // console.log("App is active, re-checking bunk status for tomorrow.");
             await scheduleOrAlertBunkStatus();
           } catch (error) {
-            console.error("Error during foreground bunk status check:", error);
+            // console.error("Error during foreground bunk status check:", error);
           }
         })();
       }
@@ -305,18 +325,18 @@ const Home = () => {
           const isPresent = pressAction.id === "yes";
           const currentDateString = getCurrentDateString();
 
-          console.log(
-            `Processing ${isPresent ? "Present" : "Absent"} for ${lectureName}`
-          );
+          // console.log(
+          //   `Processing ${isPresent ? "Present" : "Absent"} for ${lectureName}`
+          // );
 
           // Check if attendance has already been marked for this lecture
           const lectureStatusKey = `${currentDateString}_lecture_status_${lectureName}_${lectureStartTime}`;
           const existingStatus = await AsyncStorage.getItem(lectureStatusKey);
 
           if (existingStatus) {
-            console.log(
-              `Attendance already marked for ${lectureName} as ${existingStatus}`
-            );
+            // console.log(
+            //   `Attendance already marked for ${lectureName} as ${existingStatus}`
+            // );
             await notifee.cancelNotification(notification.id);
 
             // Still refresh UI even if already marked
@@ -344,9 +364,9 @@ const Home = () => {
                     }
                     subject.totalClasses = (subject.totalClasses || 0) + 1;
                     subjectUpdated = true;
-                    console.log(
-                      `Updated timetable counts for ${subject.name} on ${lectureDay}: Attended ${subject.attendedClasses}, Total ${subject.totalClasses}`
-                    );
+                    // console.log(
+                    //   `Updated timetable counts for ${subject.name} on ${lectureDay}: Attended ${subject.attendedClasses}, Total ${subject.totalClasses}`
+                    // );
                   }
                   return subject;
                 });
@@ -359,9 +379,9 @@ const Home = () => {
                 "timetable",
                 JSON.stringify(timetable)
               );
-              console.log(
-                `Timetable updated for ${lectureName} at ${lectureStartTime}`
-              );
+              // console.log(
+              //   `Timetable updated for ${lectureName} at ${lectureStartTime}`
+              // );
 
               // Show confirmation toast or alert
               Alert.alert(
@@ -377,10 +397,10 @@ const Home = () => {
           // Refresh UI after updating attendance
           loadTodayLectures();
         } catch (error) {
-          console.error(
-            "Error handling foreground notification response:",
-            error
-          );
+          // console.error(
+          //   "Error handling foreground notification response:",
+          //   error
+          // );
         }
       }
     });
@@ -408,10 +428,10 @@ const Home = () => {
 
         if (initialNotification) {
           const { notification, pressAction } = initialNotification;
-          console.log(
-            "App opened from recents by notification:",
-            pressAction.id
-          );
+          // console.log(
+          //   "App opened from recents by notification:",
+          //   pressAction.id
+          // );
 
           // Process yes/no actions
           if (
@@ -454,9 +474,9 @@ const Home = () => {
         const existingStatus = await AsyncStorage.getItem(lectureStatusKey);
 
         if (existingStatus) {
-          console.log(
-            `Attendance already marked for ${lectureName} as ${existingStatus}`
-          );
+          // console.log(
+          //   `Attendance already marked for ${lectureName} as ${existingStatus}`
+          // );
           Alert.alert(
             "Already Marked",
             `Attendance for ${lectureName} was already marked as ${existingStatus}.`
@@ -506,7 +526,7 @@ const Home = () => {
           }
         }
       } catch (error) {
-        console.error("Error marking attendance from notification:", error);
+        // console.error("Error marking attendance from notification:", error);
       }
     };
 
@@ -517,7 +537,7 @@ const Home = () => {
     const subscription = AppState.addEventListener("change", (nextAppState) => {
       if (nextAppState === "active") {
         // App came from background to active
-        console.log("App came to foreground, checking for notifications");
+        // console.log("App came to foreground, checking for notifications");
         handleInitialNotification();
         loadTodayLectures();
       }
@@ -537,7 +557,7 @@ const Home = () => {
             setShowAttendanceFinder(true);
           }
         } catch (error) {
-          console.error("Error checking attendance percentage:", error);
+          // console.error("Error checking attendance percentage:", error);
         }
       };
 
@@ -550,7 +570,7 @@ const Home = () => {
             await loadTodayLectures(); // Refresh today's lectures
           }
         } catch (error) {
-          console.error("Error refreshing data:", error);
+          // console.error("Error refreshing data:", error);
         }
       };
 
@@ -597,7 +617,7 @@ const Home = () => {
       setName(cachedName);
       await AsyncStorage.setItem("userName", cachedName);
     } catch (error) {
-      console.error("Error in loadName:", error);
+      // console.error("Error in loadName:", error);
     }
   }, []);
 
@@ -670,20 +690,20 @@ const Home = () => {
 
       if (lastAttendanceDate && lastAttendanceDate !== currentDateString) {
         // Day change handling code (unchanged)
-        console.log(
-          `Day changed from ${lastAttendanceDate} to ${currentDateString}. Clearing old statuses.`
-        );
+        // console.log(
+        //   `Day changed from ${lastAttendanceDate} to ${currentDateString}. Clearing old statuses.`
+        // );
         const allKeys = await AsyncStorage.getAllKeys();
         const keysToRemove = allKeys.filter((key) =>
           key.startsWith(`${lastAttendanceDate}_lecture_status_`)
         );
         if (keysToRemove.length > 0) {
           await AsyncStorage.multiRemove(keysToRemove);
-          console.log(
-            "Cleared old attendance statuses for:",
-            lastAttendanceDate,
-            keysToRemove
-          );
+          // console.log(
+          //   "Cleared old attendance statuses for:",
+          //   lastAttendanceDate,
+          //   keysToRemove
+          // );
         }
       }
 
@@ -703,9 +723,9 @@ const Home = () => {
           todayEntry.subjects &&
           todayEntry.subjects.length > 0
         ) {
-          console.log(
-            `Found ${todayEntry.subjects.length} lectures for ${today}`
-          );
+          // console.log(
+          //   `Found ${todayEntry.subjects.length} lectures for ${today}`
+          // );
 
           // Asynchronously fetch markedStatus for each lecture of the current day
           const lecturesForToday = await Promise.all(
@@ -737,21 +757,21 @@ const Home = () => {
           setLectures(sortedLectures);
           setHasTimetable(true);
         } else {
-          console.log(
-            `No lectures found for ${today} in timetable or timetable structure issue.`
-          );
+          // console.log(
+          //   `No lectures found for ${today} in timetable or timetable structure issue.`
+          // );
           setLectures([]);
           setHasTimetable(false);
         }
       } else {
-        console.log("No timetable data found in AsyncStorage.");
+        // console.log("No timetable data found in AsyncStorage.");
         setLectures([]);
         setHasTimetable(false);
       }
     } catch (error) {
       setLectures([]);
       setHasTimetable(false);
-      console.error("Error in loadTodayLectures:", error);
+      // console.error("Error in loadTodayLectures:", error);
       Alert.alert(
         "Error",
         "Failed to load lecture data. Please check console for details."
@@ -809,9 +829,9 @@ const Home = () => {
               }
               subject.totalClasses = (subject.totalClasses || 0) + 1;
               subjectUpdatedInTimetable = true;
-              console.log(
-                `Updated timetable counts for ${subject.name} on ${lectureItem.day}: Attended ${subject.attendedClasses}, Total ${subject.totalClasses}`
-              );
+              // console.log(
+              //   `Updated timetable counts for ${subject.name} on ${lectureItem.day}: Attended ${subject.attendedClasses}, Total ${subject.totalClasses}`
+              // );
             }
             return subject;
           });
@@ -826,9 +846,9 @@ const Home = () => {
         // Consistent key for storing status: DATE_lecture_status_SUBJECTNAME_STARTTIME
         const lectureStatusKey = `${currentDateString}_lecture_status_${lectureItem.name}_${lectureItem.startTime}`;
         await AsyncStorage.setItem(lectureStatusKey, newMarkedStatus);
-        console.log(
-          `Saved status for ${lectureItem.name} at ${lectureItem.startTime} as ${newMarkedStatus} (Key: ${lectureStatusKey})`
-        );
+        // console.log(
+        //   `Saved status for ${lectureItem.name} at ${lectureItem.startTime} as ${newMarkedStatus} (Key: ${lectureStatusKey})`
+        // );
 
         Alert.alert(
           "Success",
@@ -857,7 +877,7 @@ Attendance will update on the Attendance Screen.`
         );
       }
     } catch (error) {
-      console.error("Failed to update attendance or save status:", error);
+      // console.error("Failed to update attendance or save status:", error);
       Alert.alert(
         "Error",
         "An error occurred while updating attendance. Check console."
@@ -866,17 +886,25 @@ Attendance will update on the Attendance Screen.`
   };
 
   // Logout and onboarding reset logic
-  const deleteOnboardingData = async () => {
-    try {
-      await AsyncStorage.removeItem("onboardingDone");
-      // await AsyncStorage.removeItem("showBunkModal");
-      await AsyncStorage.removeItem("lastBunkModalShown");
-      // await AsyncStorage.removeItem("percentage");
-      router.replace("/onboarding/Welcome");
-    } catch (error) {
-      console.error("Error deleting onboarding data:", error);
-    }
-  };
+  // const deleteOnboardingData = async () => {
+  //   try {
+  //     await AsyncStorage.removeItem("onboardingDone");
+  //     // await AsyncStorage.removeItem("showBunkModal");
+  //     await AsyncStorage.removeItem("lastBunkModalShown");
+  //     await AsyncStorage.removeItem("userToken");
+  //     await AsyncStorage.removeItem("timetable");
+  //     await AsyncStorage.removeItem("lastAttendanceDate");
+  //     await AsyncStorage.removeItem("lectures");
+  //     await AsyncStorage.removeItem("showBunkModal");
+  //     await AsyncStorage.removeItem("percentage");
+  //     await AsyncStorage.removeItem("userName");
+  //     // await AsyncStorage.removeItem("percentage");
+  //     router.replace("/onboarding/Welcome");
+
+  //   } catch (error) {
+  //     // console.error("Error deleting onboarding data:", error);
+  //   }
+  // };
 
   return (
     <SafeAreaProvider>
@@ -911,10 +939,10 @@ Attendance will update on the Attendance Screen.`
           <>
             {/* Welcome Box */}
 
-            <Pressable style={styles.topBox} onPress={deleteOnboardingData}>
+            <View style={styles.topBox}>
               <Text style={styles.topBoxText}>Welcome To</Text>
               <Text style={styles.topBoxTextName}>R O L L C A L L</Text>
-            </Pressable>
+            </View>
 
             {/* Creative Timetable Button - MOVED UP */}
             <View style={styles.timetableButtonContainer}>

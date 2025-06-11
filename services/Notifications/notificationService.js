@@ -363,9 +363,9 @@ export async function scheduleOrAlertBunkStatus() {
 
     if (canBunk) {
       // Calculate tomorrow at 7 AM  testing comment this
-      // const triggerDate = new Date();
-      // triggerDate.setDate(triggerDate.getDate() + 1);
-      // triggerDate.setHours(7, 0, 0, 0);
+      const triggerDate = new Date();
+      triggerDate.setDate(triggerDate.getDate() + 1);
+      triggerDate.setHours(7, 0, 0, 0);
 
       // for testing use this so that notification can be seen immediately in 1 minute  testoing :- uncomment this
       // const triggerDate = new Date(Date.now() + 1 * 60 * 1000);
@@ -378,7 +378,7 @@ export async function scheduleOrAlertBunkStatus() {
       await notifee.createTriggerNotification(
         {
           id: NOTIFICATION_ID,
-          title: "🎉 Good News! You Can Bunk Today!",
+          title: "🎉 Good News! You Can Bunk All Lectures Today!",
           body: "Your attendance is high enough to skip all lectures. Enjoy your day off!",
           data: {
             type: "DAILY_BUNK_ALERT", // Add this to match your filtering logic

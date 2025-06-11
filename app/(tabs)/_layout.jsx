@@ -20,7 +20,7 @@ export default function TabLayout() {
       backgroundColor: '#000', // Match your app's background
     },
     loadingText: {
-      color: '#40E0D0',
+      color: '#3fa4ff',
       fontSize: 18,
       marginBottom: 20,
     }
@@ -67,7 +67,7 @@ export default function TabLayout() {
   if (initializing) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#40E0D0" />
+        <ActivityIndicator size="large" color="#3fa4ff" />
         <Text style={styles.loadingText}>Loading...</Text>
       </View>
     );
@@ -249,7 +249,7 @@ const Styles = StyleSheet.create({
     backgroundColor: '#000', // Match your app's background
   },
   loadingText: {
-    color: '#40E0D0',
+    color: '#3fa4ff',
     fontSize: 18,
     marginBottom: 20,
   }

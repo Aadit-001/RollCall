@@ -96,7 +96,7 @@ const Notes = () => {
       }
       setInitializing(false);
     } catch (error) {
-      console.error("Error loading subjects:", error);
+      // console.error("Error loading subjects:", error);
       setSubjects([]);
       setFilteredSubjects([]);
       setInitializing(false);
@@ -121,7 +121,7 @@ const Notes = () => {
       setSearchText(""); // Reset search after adding
       setModalVisible(false);
     } catch (error) {
-      console.error("Error adding subject:", error);
+      // console.error("Error adding subject:", error);
     }
   };
 
@@ -314,7 +314,7 @@ const Notes = () => {
             {searchText.length > 0 ? (
               <>
                 <Ionicons name="search" size={80} color="#555" />
-                <Text style={styles.emptyTitle}>No matching subjects</Text>
+                <Text style={styles.emptyTitle}>No matching Notes</Text>
                 <Text style={styles.emptyText}>
                   Try searching with a different term
                 </Text>
@@ -333,7 +333,7 @@ const Notes = () => {
                   }}
                   style={styles.emptyImage}
                 />
-                <Text style={styles.emptyTitle}>No subjects yet</Text>
+                <Text style={styles.emptyTitle}>No Notes yet</Text>
                 <Text style={styles.emptyText}>
                   Start adding your subjects to create notes!
                 </Text>
@@ -342,7 +342,7 @@ const Notes = () => {
                   onPress={() => setModalVisible(true)}
                 >
                   <Text style={styles.emptyButtonText}>
-                    Add Your First Subject
+                    Add Your First Note
                   </Text>
                 </TouchableOpacity>
               </>
@@ -384,7 +384,7 @@ const Notes = () => {
             ]}
           >
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Add New Subject</Text>
+              <Text style={styles.modalTitle}>Add New Note</Text>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
                 <Ionicons name="close-circle" size={28} color="#555" />
               </TouchableOpacity>

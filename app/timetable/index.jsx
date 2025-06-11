@@ -108,7 +108,7 @@ export default function Timetable() {
       <SafeAreaProvider>
         <SafeAreaView style={styles.loadingContainer}>
           <StatusBar style="light" backgroundColor="#121212" />
-          <ActivityIndicator size="large" color="#40E0D0" />
+          <ActivityIndicator size="large" color="#3fa4ff" />
           <Text style={styles.loadingText}>Loading...</Text>
         </SafeAreaView>
       </SafeAreaProvider>
@@ -606,7 +606,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   loadingText: {
-    color: '#40E0D0',
+    color: '#3fa4ff', 
     marginTop: 20,
     fontSize: 16,
     textAlign: 'center',

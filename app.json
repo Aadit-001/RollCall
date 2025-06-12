@@ -44,7 +44,6 @@
             "remote-notification"
           ]
         }
-
       ]
     ],
     "experiments": {
@@ -55,7 +54,7 @@
         "origin": false
       },
       "eas": {
-        "projectId": "",
+        "projectId": "cd48bf0b-43cf-4cb3-bdcc-fcede9ee3e0a",
         "build": {
           "experimental": {
             "ios": {
@@ -68,11 +67,38 @@
                       "group.com.anonymous.RollCall.notifee"
                     ]
                   }
+                },
+                {
+                  "targetName": "NotifeeNotificationServiceExtension",
+                  "bundleIdentifier": "com.anonymous.RollCall.NotifeeNotificationServiceExtension",
+                  "entitlements": {
+                    "com.apple.security.application-groups": [
+                      "group.com.anonymous.RollCall.notifee"
+                    ]
+                  }
+                },
+                {
+                  "targetName": "NotifeeNotificationServiceExtension",
+                  "bundleIdentifier": "undefined.NotifeeNotificationServiceExtension",
+                  "entitlements": {
+                    "com.apple.security.application-groups": [
+                      "group.undefined.notifee"
+                    ]
+                  }
                 }
               ]
             },
             "android": {
               "appExtensions": [
+                {
+                  "targetName": "NotifeeNotificationServiceExtension",
+                  "bundleIdentifier": "com.anonymous.RollCall.NotifeeNotificationServiceExtension",
+                  "entitlements": {
+                    "com.apple.security.application-groups": [
+                      "group.com.anonymous.RollCall.notifee"
+                    ]
+                  }
+                },
                 {
                   "targetName": "NotifeeNotificationServiceExtension",
                   "bundleIdentifier": "com.anonymous.RollCall.NotifeeNotificationServiceExtension",

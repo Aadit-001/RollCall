@@ -2,6 +2,10 @@ import notifee, {
   AndroidImportance,
   EventType,
   TimestampTrigger,
+  AndroidNotificationPriority,
+  AndroidVisibility,
+  AndroidNotificationChannel,
+  MAX,
   TriggerType,
   RepeatFrequency,
   AuthorizationStatus,
@@ -102,7 +106,6 @@ export async function initNotifications() {
       {
         id: "ROLLCALL",
         actions: [
-          // Modified to open app in foreground
           { id: "yes", title: "Yes", options: { foreground: true } },
           { id: "no", title: "No", options: { foreground: true } },
           { id: "cancel", title: "Cancel", options: { foreground: true } },

@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "RollCall",
-    "slug": "roll-call",
+    "slug": "RollCall",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/rc3.jpeg",
@@ -55,7 +55,7 @@
         "origin": false
       },
       "eas": {
-        "projectId": "97bbd1ff-583a-4660-90a8-6d2ab14067ab",
+        "projectId": "",
         "build": {
           "experimental": {
             "ios": {
@@ -88,6 +88,6 @@
         }
       }
     },
-    "owner": "harsh002"
+    "owner": "aadit-001"
   }
 }

@@ -20,31 +20,32 @@ const getCurrentDateString = () => {
 };
 
 // Initialize channels & actions for notifications
-// export async function initNotifications() {
-//   if (Platform.OS === "android") {
-//     await notifee.createChannel({
-//       id: "rollcall",
-//       name: "RollCall Weekly Reminders",
-//       importance: AndroidImportance.HIGH,
-//     });
-//   }
-
-//   if (Platform.OS === "ios") {
-//     await notifee.setNotificationCategories([
-//       {
-//         id: "ROLLCALL",
-//         actions: [
-//           // Modified to open app in foreground
-//           { id: "yes", title: "Yes", options: { foreground: true } },
-//           { id: "no", title: "No", options: { foreground: true } },
-//           { id: "cancel", title: "Cancel", options: { foreground: true } },
-//         ],
-//       },
-//     ]);
-//   }
-
-// }
 export async function initNotifications() {
+  if (Platform.OS === "android") {
+    await notifee.createChannel({
+      id: "rollcall",
+      name: "RollCall Weekly Reminders",
+      importance: AndroidImportance.HIGH,
+    });
+  }
+
+  if (Platform.OS === "ios") {
+    await notifee.setNotificationCategories([
+      {
+        id: "ROLLCALL",
+        actions: [
+          // Modified to open app in foreground
+          { id: "yes", title: "Yes", options: { foreground: true } },
+          { id: "no", title: "No", options: { foreground: true } },
+          { id: "cancel", title: "Cancel", options: { foreground: true } },
+        ],
+      },
+    ]);
+  }
+
+}
+
+export async function initNotificationsPermissions() {
   try {
     // Request permissions
     const settings = await notifee.requestPermission({
@@ -159,6 +160,9 @@ export async function initNotifications() {
 }
 
 // Helper: Calculate the next occurrence of a weekday and time
+
+
+
 function nextOccurrence(weekdayIndex, timeStr) {
   const [hour, minute] = timeStr.split(":").map(Number);
   const now = new Date();

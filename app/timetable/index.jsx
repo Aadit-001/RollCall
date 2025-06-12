@@ -18,6 +18,7 @@ import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
 import DateTimePicker from "@react-native-community/datetimepicker";
+
 // import {
 //   getFirestore,
 //   doc,
@@ -27,6 +28,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 // } from "firebase/firestore";
 import {
   initNotifications,
+  initNotificationsPermissions,
   scheduleWeeklyLectures,
 } from "@/services/Notifications/notificationService";
 
@@ -73,6 +75,7 @@ export default function Timetable() {
   useEffect(() => {
     (async () => {
       await initNotifications();
+      await initNotificationsPermissions();
       await loadTimetable();
     })();
   }, []);

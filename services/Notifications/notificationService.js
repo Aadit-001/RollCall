@@ -8,6 +8,7 @@ import notifee, {
   MAX,
   TriggerType,
   RepeatFrequency,
+  AuthorizationStatus,
 } from "@notifee/react-native";
 import { Alert } from "react-native"; // <-- Add this import
 
@@ -24,35 +25,21 @@ const getCurrentDateString = () => {
 };
 
 // Initialize channels & actions for notifications
-export async function initNotifications() {
+async function ensurePermission() {
+  // Current status
+  const current = await notifee.getNotificationSettings();
+  console.log("Current notification settings:", current.authorizationStatus);
 
-  if (Platform.OS === "android") {
-    await notifee.createChannel({
-      id: "rollcall",
-      name: "RollCall Weekly Reminders",
-      importance: AndroidImportance.HIGH,
-      sound: "default",
-      vibration: true,
-    });
+  if (current.authorizationStatus === AuthorizationStatus.AUTHORIZED) {
+    return true;
   }
 
-  if (Platform.OS === "ios") {
-    await notifee.setNotificationCategories([
-      {
-        id: "ROLLCALL",
-        actions: [
-          { id: "yes", title: "Yes", options: { foreground: true } },
-          { id: "no", title: "No", options: { foreground: true } },
-          { id: "cancel", title: "Cancel", options: { foreground: true } },
-        ],
-      },
-    ]);
-  }
-
-}
-
-export async function initPermissions() {
-  const settings = await notifee.requestPermission({
+  console.log(
+    "Requesting notification permissions...",
+    AuthorizationStatus.AUTHORIZED
+  );
+  // Ask the user
+  const updated = await notifee.requestPermission({
     android: {
       alert: true,
       badge: true,
@@ -74,7 +61,60 @@ export async function initPermissions() {
       carPlay: true,
     },
   });
+  // iOS + Android 13[2][3]
+  if (updated.authorizationStatus === AuthorizationStatus.DENIED) {
+    Alert.alert(
+      "Permission Denied",
+      "Please enable notification permission manually in Settings.",
+      [
+        {
+          text: "Open Settings",
+          onPress: () => notifee.openNotificationSettings(),
+        },
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+      ]
+    );
+  }
+  console.log("auth status" + AuthorizationStatus.DENIED);
+  console.log("Updated notification settings:", updated.authorizationStatus);
+
+  return updated.authorizationStatus === AuthorizationStatus.AUTHORIZED;
 }
+
+export async function initNotifications() {
+  const granted = await ensurePermission();
+  console.log("Notification permission granted:", granted);
+  if (!granted) {
+    // You can show an in-app message explaining how to enable notifications
+    return;
+  }
+
+  if (Platform.OS === "android") {
+    await notifee.createChannel({
+      id: "rollcall",
+      name: "RollCall Weekly Reminders",
+      importance: AndroidImportance.HIGH,
+      sound: "default",
+    });
+  }
+
+  if (Platform.OS === "ios") {
+    await notifee.setNotificationCategories([
+      {
+        id: "ROLLCALL",
+        actions: [
+          { id: "yes", title: "Yes", options: { foreground: true } },
+          { id: "no", title: "No", options: { foreground: true } },
+          { id: "cancel", title: "Cancel", options: { foreground: true } },
+        ],
+      },
+    ]);
+  }
+}
+
 // export async function initNotificationsPermissions() {
 //   try {
 //     // Request permissions
@@ -101,10 +141,10 @@ export async function initPermissions() {
 //       },
 //     });
 
-//     // if (settings.authorizationStatus !== "authorized") {
-//     //   console.warn("Notification permissions not granted");
-//     //   return false;
-//     // }
+//     if (settings.authorizationStatus !== "authorized") {
+//       console.warn("Notification permissions not granted");
+//       return false;
+//     }
 
 //     // Create Android channel with screen wake and system sound
 //     if (Platform.OS === "android") {
@@ -116,7 +156,7 @@ export async function initPermissions() {
 //         vibrationPattern: [0, 250, 250, 250],
 //         lights: true,
 //         lightColor: "#FF231F7C",
-//         sound: "default",
+//         // sound: "default",
 //         bypassDnd: true,
 //         showBadge: true,
 //         allowBackgroundProcessing: true,
@@ -173,7 +213,7 @@ export async function initPermissions() {
 //             customDismissAction: true,
 //             carPlay: true,
 //             criticalAlert: true,
-//             sound: "default",
+//             // sound: "default",
 //             announcement: true,
 //             foreground: true,
 //           },
@@ -190,8 +230,6 @@ export async function initPermissions() {
 // }
 
 // Helper: Calculate the next occurrence of a weekday and time
-
-
 
 function nextOccurrence(weekdayIndex, timeStr) {
   const [hour, minute] = timeStr.split(":").map(Number);
@@ -262,6 +300,7 @@ export async function scheduleWeeklyLectures(lectures) {
         body: "",
         android: {
           channelId: "rollcall",
+          sound: "default",
           pressAction: {
             id: "default",
             launchActivity: "default",
@@ -434,10 +473,10 @@ export async function scheduleOrAlertBunkStatus() {
       // console.log(
       //   `Notification scheduled for: ${triggerDate.toLocaleString()}`
       // );
-        // Alert.alert(
-        //   "Bunk Alert Scheduled!",
-        //   "You can skip all lectures tomorrow. A reminder notification has been set for 7 AM."
-        // );
+      // Alert.alert(
+      //   "Bunk Alert Scheduled!",
+      //   "You can skip all lectures tomorrow. A reminder notification has been set for 7 AM."
+      // );
     } else {
       // console.log(`Bunking not possible. Reason: ${reason}`);
       // Alert.alert(

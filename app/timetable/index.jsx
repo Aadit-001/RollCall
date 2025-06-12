@@ -28,7 +28,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 // } from "firebase/firestore";
 import {
   initNotifications,
-  initPermissions,
+  // initNotificationsPermissions,
   scheduleWeeklyLectures,
 } from "@/services/Notifications/notificationService";
 
@@ -75,7 +75,7 @@ export default function Timetable() {
   useEffect(() => {
     (async () => {
       await initNotifications();
-      await initPermissions();
+      // await initNotificationsPermissions();
       await loadTimetable();
     })();
   }, []);

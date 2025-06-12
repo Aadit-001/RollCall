@@ -2,6 +2,10 @@ import notifee, {
   AndroidImportance,
   EventType,
   TimestampTrigger,
+  AndroidNotificationPriority,
+  AndroidVisibility,
+  AndroidNotificationChannel,
+  MAX,
   TriggerType,
   RepeatFrequency,
 } from "@notifee/react-native";
@@ -21,11 +25,14 @@ const getCurrentDateString = () => {
 
 // Initialize channels & actions for notifications
 export async function initNotifications() {
+
   if (Platform.OS === "android") {
     await notifee.createChannel({
       id: "rollcall",
       name: "RollCall Weekly Reminders",
       importance: AndroidImportance.HIGH,
+      sound: "default",
+      vibration: true,
     });
   }
 
@@ -34,7 +41,6 @@ export async function initNotifications() {
       {
         id: "ROLLCALL",
         actions: [
-          // Modified to open app in foreground
           { id: "yes", title: "Yes", options: { foreground: true } },
           { id: "no", title: "No", options: { foreground: true } },
           { id: "cancel", title: "Cancel", options: { foreground: true } },
@@ -45,119 +51,143 @@ export async function initNotifications() {
 
 }
 
-export async function initNotificationsPermissions() {
-  try {
-    // Request permissions
-    const settings = await notifee.requestPermission({
-      android: {
-        alert: true,
-        badge: true,
-        sound: true,
-        vibration: true,
-        light: true,
-        foregroundService: true,
-        criticalAlert: true,
-        provisional: false,
-        bypassDnd: true,
-      },
-      ios: {
-        alert: true,
-        badge: true,
-        sound: true,
-        criticalAlert: true,
-        provisional: false,
-        announcement: true,
-        carPlay: true,
-      },
-    });
-
-    if (settings.authorizationStatus !== "authorized") {
-      console.warn("Notification permissions not granted");
-      return false;
-    }
-
-    // Create Android channel with screen wake and system sound
-    if (Platform.OS === "android") {
-      await notifee.createChannel({
-        id: "rollcall",
-        name: "RollCall Weekly Reminders",
-        importance: AndroidImportance.HIGH,
-        visibility: AndroidVisibility.PUBLIC,
-        vibrationPattern: [0, 250, 250, 250],
-        lights: true,
-        lightColor: "#FF231F7C",
-        // sound: "default",
-        bypassDnd: true,
-        showBadge: true,
-        allowBackgroundProcessing: true,
-        priority: AndroidNotificationPriority.MAX,
-        lockscreenVisibility: AndroidVisibility.PUBLIC,
-        vibration: true,
-        fullScreenIntent: true,
-        groupId: "rollcall_group",
-        groupSummary: true,
-      });
-    }
-
-    // Set iOS notification categories with critical alerts
-    if (Platform.OS === "ios") {
-      await notifee.setNotificationCategories([
-        {
-          id: "ROLLCALL",
-          actions: [
-            {
-              id: "yes",
-              title: "✅ Yes",
-              options: {
-                foreground: true,
-                destructive: false,
-                authenticationRequired: false,
-              },
-            },
-            {
-              id: "no",
-              title: "❌ No",
-              options: {
-                foreground: true,
-                destructive: false,
-                authenticationRequired: false,
-              },
-            },
-            {
-              id: "cancel",
-              title: "🚫 Dismiss",
-              options: {
-                foreground: false,
-                destructive: true,
-                authenticationRequired: false,
-              },
-            },
-          ],
-          options: {
-            hiddenPreviewShowTitle: true,
-            hiddenPreviewBody: true,
-            hiddenPreviewShowSubtitle: true,
-            hiddenPreviewFormat: "default",
-            hiddenPreviewSummaryArgument: "RollCall",
-            hiddenPreviewSummaryArgumentCount: 1,
-            customDismissAction: true,
-            carPlay: true,
-            criticalAlert: true,
-            // sound: "default",
-            announcement: true,
-            foreground: true,
-          },
-        },
-      ]);
-    }
-    // await scheduleDailyBunkNotification();
-    await scheduleOrAlertBunkStatus();
-    return true;
-  } catch (error) {
-    console.error("Error initializing notifications:", error);
-    return false;
-  }
+export async function initPermissions() {
+  const settings = await notifee.requestPermission({
+    android: {
+      alert: true,
+      badge: true,
+      sound: true,
+      vibration: true,
+      light: true,
+      foregroundService: true,
+      criticalAlert: true,
+      provisional: false,
+      bypassDnd: true,
+    },
+    ios: {
+      alert: true,
+      badge: true,
+      sound: true,
+      criticalAlert: true,
+      provisional: false,
+      announcement: true,
+      carPlay: true,
+    },
+  });
 }
+// export async function initNotificationsPermissions() {
+//   try {
+//     // Request permissions
+//     const settings = await notifee.requestPermission({
+//       android: {
+//         alert: true,
+//         badge: true,
+//         sound: true,
+//         vibration: true,
+//         light: true,
+//         foregroundService: true,
+//         criticalAlert: true,
+//         provisional: false,
+//         bypassDnd: true,
+//       },
+//       ios: {
+//         alert: true,
+//         badge: true,
+//         sound: true,
+//         criticalAlert: true,
+//         provisional: false,
+//         announcement: true,
+//         carPlay: true,
+//       },
+//     });
+
+//     // if (settings.authorizationStatus !== "authorized") {
+//     //   console.warn("Notification permissions not granted");
+//     //   return false;
+//     // }
+
+//     // Create Android channel with screen wake and system sound
+//     if (Platform.OS === "android") {
+//       await notifee.createChannel({
+//         id: "rollcall",
+//         name: "RollCall Weekly Reminders",
+//         importance: AndroidImportance.HIGH,
+//         visibility: AndroidVisibility.PUBLIC,
+//         vibrationPattern: [0, 250, 250, 250],
+//         lights: true,
+//         lightColor: "#FF231F7C",
+//         sound: "default",
+//         bypassDnd: true,
+//         showBadge: true,
+//         allowBackgroundProcessing: true,
+//         priority: AndroidNotificationPriority.MAX,
+//         lockscreenVisibility: AndroidVisibility.PUBLIC,
+//         vibration: true,
+//         fullScreenIntent: true,
+//         groupId: "rollcall_group",
+//         groupSummary: true,
+//       });
+//     }
+
+//     // Set iOS notification categories with critical alerts
+//     if (Platform.OS === "ios") {
+//       await notifee.setNotificationCategories([
+//         {
+//           id: "ROLLCALL",
+//           actions: [
+//             {
+//               id: "yes",
+//               title: "✅ Yes",
+//               options: {
+//                 foreground: true,
+//                 destructive: false,
+//                 authenticationRequired: false,
+//               },
+//             },
+//             {
+//               id: "no",
+//               title: "❌ No",
+//               options: {
+//                 foreground: true,
+//                 destructive: false,
+//                 authenticationRequired: false,
+//               },
+//             },
+//             {
+//               id: "cancel",
+//               title: "🚫 Dismiss",
+//               options: {
+//                 foreground: false,
+//                 destructive: true,
+//                 authenticationRequired: false,
+//               },
+//             },
+//           ],
+//           options: {
+//             hiddenPreviewShowTitle: true,
+//             hiddenPreviewBody: true,
+//             hiddenPreviewShowSubtitle: true,
+//             hiddenPreviewFormat: "default",
+//             hiddenPreviewSummaryArgument: "RollCall",
+//             hiddenPreviewSummaryArgumentCount: 1,
+//             customDismissAction: true,
+//             carPlay: true,
+//             criticalAlert: true,
+//             sound: "default",
+//             announcement: true,
+//             foreground: true,
+//           },
+//         },
+//       ]);
+//     }
+//     // await scheduleDailyBunkNotification();
+//     await scheduleOrAlertBunkStatus();
+//     return true;
+//   } catch (error) {
+//     console.error("Error initializing notifications:", error);
+//     return false;
+//   }
+// }
 
 // Helper: Calculate the next occurrence of a weekday and time
 

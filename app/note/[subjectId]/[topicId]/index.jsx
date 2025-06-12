@@ -120,7 +120,7 @@ export default function TopicNotes() {
     clearTimeout(textInputRef.saveTimeout);
     textInputRef.saveTimeout = setTimeout(() => {
       saveNote(text);
-    }, 2000);
+    }, 100);
   };
 
   const clearNote = () => {

@@ -37,12 +37,14 @@
       [
         "@evennit/notifee-expo-plugin",
         {
+          "androidAppExtension": true,
           "iosDeploymentTarget": "13.4",
           "apsEnvMode": "production",
           "backgroundModes": [
             "remote-notification"
           ]
         }
+
       ]
     ],
     "experiments": {
@@ -60,10 +62,23 @@
               "appExtensions": [
                 {
                   "targetName": "NotifeeNotificationServiceExtension",
-                  "bundleIdentifier": "undefined.NotifeeNotificationServiceExtension",
+                  "bundleIdentifier": "com.anonymous.RollCall.NotifeeNotificationServiceExtension",
                   "entitlements": {
                     "com.apple.security.application-groups": [
-                      "group.undefined.notifee"
+                      "group.com.anonymous.RollCall.notifee"
+                    ]
+                  }
+                }
+              ]
+            },
+            "android": {
+              "appExtensions": [
+                {
+                  "targetName": "NotifeeNotificationServiceExtension",
+                  "bundleIdentifier": "com.anonymous.RollCall.NotifeeNotificationServiceExtension",
+                  "entitlements": {
+                    "com.apple.security.application-groups": [
+                      "group.com.anonymous.RollCall.notifee"
                     ]
                   }
                 }

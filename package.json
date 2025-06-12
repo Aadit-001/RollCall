@@ -52,7 +52,6 @@
     "react-native-signature-canvas": "^4.7.2",
     "react-native-svg": "^15.11.2",
     "react-native-uuid": "^2.0.3",
-    "react-native-vector-icons": "^10.2.0",
     "react-native-web": "~0.19.13",
     "react-native-webview": "13.12.5"
   },

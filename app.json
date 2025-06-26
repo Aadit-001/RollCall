@@ -1,22 +1,25 @@
 {
   "expo": {
     "name": "RollCall",
-    "slug": "RollCall",
+    "slug": "rollcall",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/rc3.jpeg",
-    "scheme": "myapp",
+    "scheme": "rollcall",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "ios": {
-      "supportsTablet": true
-    },
     "android": {
+      "package": "com.pixelvolt.RollCall",
+      "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/rc3.jpeg",
-        "backgroundColor": "#ffffff"
-      },
-      "package": "com.anonymous.RollCall"
+        "backgroundColor": "#121212"
+      }
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.pixelvolt.RollCall",
+      "buildNumber": "1.0.0"
     },
     "web": {
       "bundler": "metro",
@@ -31,7 +34,7 @@
           "image": "./assets/images/rc3.jpeg",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
+          "backgroundColor": "#121212"
         }
       ],
       [
@@ -40,9 +43,7 @@
           "androidAppExtension": true,
           "iosDeploymentTarget": "13.4",
           "apsEnvMode": "production",
-          "backgroundModes": [
-            "remote-notification"
-          ]
+          "backgroundModes": ["remote-notification"]
         }
       ]
     ],
@@ -54,36 +55,16 @@
         "origin": false
       },
       "eas": {
-        "projectId": "cd48bf0b-43cf-4cb3-bdcc-fcede9ee3e0a",
+        "projectId": "e67f1e9f-1740-4018-8cc5-57a63912c8cf",
         "build": {
           "experimental": {
             "ios": {
               "appExtensions": [
                 {
                   "targetName": "NotifeeNotificationServiceExtension",
-                  "bundleIdentifier": "com.anonymous.RollCall.NotifeeNotificationServiceExtension",
+                  "bundleIdentifier": "com.pixelvolt.RollCall.NotifeeNotificationServiceExtension",
                   "entitlements": {
-                    "com.apple.security.application-groups": [
-                      "group.com.anonymous.RollCall.notifee"
-                    ]
-                  }
-                },
-                {
-                  "targetName": "NotifeeNotificationServiceExtension",
-                  "bundleIdentifier": "com.anonymous.RollCall.NotifeeNotificationServiceExtension",
-                  "entitlements": {
-                    "com.apple.security.application-groups": [
-                      "group.com.anonymous.RollCall.notifee"
-                    ]
-                  }
-                },
-                {
-                  "targetName": "NotifeeNotificationServiceExtension",
-                  "bundleIdentifier": "undefined.NotifeeNotificationServiceExtension",
-                  "entitlements": {
-                    "com.apple.security.application-groups": [
-                      "group.undefined.notifee"
-                    ]
+                    "com.apple.security.application-groups": ["group.com.pixelvolt.RollCall.notifee"]
                   }
                 }
               ]
@@ -92,20 +73,9 @@
               "appExtensions": [
                 {
                   "targetName": "NotifeeNotificationServiceExtension",
-                  "bundleIdentifier": "com.anonymous.RollCall.NotifeeNotificationServiceExtension",
+                  "bundleIdentifier": "com.pixelvolt.RollCall.NotifeeNotificationServiceExtension",
                   "entitlements": {
-                    "com.apple.security.application-groups": [
-                      "group.com.anonymous.RollCall.notifee"
-                    ]
-                  }
-                },
-                {
-                  "targetName": "NotifeeNotificationServiceExtension",
-                  "bundleIdentifier": "com.anonymous.RollCall.NotifeeNotificationServiceExtension",
-                  "entitlements": {
-                    "com.apple.security.application-groups": [
-                      "group.com.anonymous.RollCall.notifee"
-                    ]
+                    "com.apple.security.application-groups": ["group.com.pixelvolt.RollCall.notifee"]
                   }
                 }
               ]
@@ -114,6 +84,6 @@
         }
       }
     },
-    "owner": "aadit-001"
+    "owner": "pixelvolt"
   }
 }

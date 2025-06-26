@@ -3,6 +3,7 @@ import {
   Text,
   View,
   TouchableOpacity,
+  Dimensions,
   SafeAreaView,
   AppState,
 } from "react-native";
@@ -1246,10 +1247,19 @@ const styles = StyleSheet.create({
   },
   topBoxTextName: {
     color: "#fff",
-    fontSize: 28, // Slightly reduced size
+    fontSize: 28, // Default size
     fontWeight: "bold",
     letterSpacing: 3, // Reduced letter spacing
     textAlign: "center",
+    // Responsive font size based on screen width
+    ...(Dimensions.get('window').width < 375 && { // For smaller screens (e.g., iPhone SE)
+      fontSize: 24,
+      letterSpacing: 2,
+    }),
+    ...(Dimensions.get('window').width < 320 && { // For very small screens
+      fontSize: 20,
+      letterSpacing: 1,
+    }),
   },
   bottomBoxTittle: {
     // backgroundColor: "transparent", // Already transparent

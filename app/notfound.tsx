@@ -9,7 +9,7 @@ export default function NotFound() {
         alignItems: "center",
       }}
     >
-      <Text>Edit app/(tabs)/index.tsx to edit this screen.</Text>
+      <Text style={{ color: "#fff" }}>Not Found</Text>
     </View>
   );
 }

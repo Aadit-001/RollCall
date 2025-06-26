@@ -17,7 +17,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.pixelvolt.RollCall",
+      "bundleIdentifier": "com.pixelvolt.RollCall"
     },
     "web": {
       "bundler": "metro",

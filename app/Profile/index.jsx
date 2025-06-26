@@ -9,7 +9,8 @@ import {
   Image,
   ActivityIndicator,
   RefreshControl,
-  Platform
+  Platform,
+  Dimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -225,7 +226,7 @@ const ProfileScreen = () => {
           <Text style={styles.logoutButtonText}>Logout</Text>
         </TouchableOpacity> */}
       <View style={styles.bottomTabBarContainer}>
-          <Text style={styles.bottomTabBarText}>Version 1.0.0</Text>
+          <Text style={styles.bottomTabBarText}>Version <Text style={styles.bottomTabBarTextnew}>1.0.0</Text></Text>
           <Text style={styles.bottomTabBarText}>© 2025 RollCall. All rights reserved.</Text>
       </View>
       </ScrollView>
@@ -244,7 +245,7 @@ const ProfileScreen = () => {
               >
                 <Ionicons name="close-outline" size={24} color="#fff" />
               </TouchableOpacity>
-              <Text style={styles.modalTitle}>About RollCall</Text>
+              <Text style={styles.modalTitle}>About <Text style={styles.modalTitlenew}>RollCall</Text></Text>
             </View>
             <View style={styles.modalBody}>
               <View style={styles.developerCard}>
@@ -301,6 +302,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#fff',
   },
+  modalTitlenew: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#3fa4ff',
+  },
   modalBody: {
     marginBottom: 20,
   },
@@ -353,6 +359,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     color: "#fff",
     fontSize: 28,
+   
     fontWeight: "bold",
     flex: 1,
     textAlign: 'left',
@@ -373,7 +380,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 12,
     borderWidth: 2,
-    borderColor: "#4A4A4A",
+    borderColor: "#3fa4ff",
   },
   avatarText: {
     color: "#fff",
@@ -401,6 +408,7 @@ const styles = StyleSheet.create({
   attendanceCriteriaText: {
     color: "#E0E0E0",
     fontSize: 16,
+    
   },
   menuContainer: {
     marginHorizontal: 15,
@@ -411,6 +419,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: "#2A2A2A",
+    
   },
   menuIcon: {
     marginRight: 18,
@@ -419,6 +428,7 @@ const styles = StyleSheet.create({
     flex: 1,
     color: "#E0E0E0",
     fontSize: 16,
+    
   },
   logoutButton: {
     flexDirection: "row",
@@ -464,6 +474,13 @@ const styles = StyleSheet.create({
     color: "grey",
     fontSize: 12,
     fontWeight: "500",
+    
+  },
+  bottomTabBarTextnew: {
+    color: "#3fa4ff",
+    fontSize: 12,
+    fontWeight: "500",
+    
   },
 });
 

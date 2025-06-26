@@ -1252,14 +1252,6 @@ const styles = StyleSheet.create({
     letterSpacing: 3, // Reduced letter spacing
     textAlign: "center",
     // Responsive font size based on screen width
-    ...(Dimensions.get('window').width < 375 && { // For smaller screens (e.g., iPhone SE)
-      fontSize: 24,
-      letterSpacing: 2,
-    }),
-    ...(Dimensions.get('window').width < 320 && { // For very small screens
-      fontSize: 20,
-      letterSpacing: 1,
-    }),
   },
   bottomBoxTittle: {
     // backgroundColor: "transparent", // Already transparent

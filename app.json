@@ -1,37 +1,35 @@
 {
   "expo": {
     "name": "RollCall",
-    "slug": "rollcall",
+    "slug": "app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/rc3.jpeg",
+    "icon": "./assets/images/rc3.png",
     "scheme": "rollcall",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "android": {
       "package": "com.pixelvolt.RollCall",
-      "versionCode": 1,
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/rc3.jpeg",
+        "foregroundImage": "./assets/images/rc3.png",
         "backgroundColor": "#121212"
       }
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.pixelvolt.RollCall",
-      "buildNumber": "1.0.0"
+      "bundleIdentifier": "com.pixelvolt.RollCall"
     },
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/rc3.jpeg"
+      "favicon": "./assets/images/rc3.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/rc3.jpeg",
+          "image": "./assets/images/splash.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#121212"
@@ -43,7 +41,9 @@
           "androidAppExtension": true,
           "iosDeploymentTarget": "13.4",
           "apsEnvMode": "production",
-          "backgroundModes": ["remote-notification"]
+          "backgroundModes": [
+            "remote-notification"
+          ]
         }
       ]
     ],
@@ -55,7 +55,7 @@
         "origin": false
       },
       "eas": {
-        "projectId": "e67f1e9f-1740-4018-8cc5-57a63912c8cf",
+        "projectId": "f272a3a8-196e-4a8f-91fe-fa4224649cd2",
         "build": {
           "experimental": {
             "ios": {
@@ -64,7 +64,9 @@
                   "targetName": "NotifeeNotificationServiceExtension",
                   "bundleIdentifier": "com.pixelvolt.RollCall.NotifeeNotificationServiceExtension",
                   "entitlements": {
-                    "com.apple.security.application-groups": ["group.com.pixelvolt.RollCall.notifee"]
+                    "com.apple.security.application-groups": [
+                      "group.com.pixelvolt.RollCall.notifee"
+                    ]
                   }
                 }
               ]
@@ -75,7 +77,9 @@
                   "targetName": "NotifeeNotificationServiceExtension",
                   "bundleIdentifier": "com.pixelvolt.RollCall.NotifeeNotificationServiceExtension",
                   "entitlements": {
-                    "com.apple.security.application-groups": ["group.com.pixelvolt.RollCall.notifee"]
+                    "com.apple.security.application-groups": [
+                      "group.com.pixelvolt.RollCall.notifee"
+                    ]
                   }
                 }
               ]
@@ -84,6 +88,6 @@
         }
       }
     },
-    "owner": "pixelvolt"
+    "owner": "pixy001"
   }
 }

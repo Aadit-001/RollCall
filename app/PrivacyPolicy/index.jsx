@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, StyleSheet, SafeAreaView } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, SafeAreaView, Pressable, Linking } from 'react-native';
 
 const PrivacyPolicy = () => {
   return (
@@ -42,7 +42,9 @@ const PrivacyPolicy = () => {
           <Text style={styles.sectionTitle}>7. Contact Us</Text>
           <Text style={styles.text}>
             If you have any questions or concerns about this Privacy Policy, please contact us at:
-            <Text style={styles.contactInfo}> help.pixelvolt.apps@gmail.com</Text>
+            <Pressable onPress={() => Linking.openURL('mailto:help.pixelvolt.apps@gmail.com')}>
+              <Text style={styles.contactInfo}>help.pixelvolt.apps@gmail.com</Text>
+            </Pressable>
           </Text>
         </View>
       </ScrollView>

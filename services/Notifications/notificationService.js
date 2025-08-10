@@ -97,7 +97,11 @@ export async function initNotifications() {
       id: "rollcall",
       name: "RollCall Weekly Reminders",
       importance: AndroidImportance.HIGH,
+      // allowWhileIdle: true,
       sound: "default",
+      // alarmManager: {
+      //   allowWhileIdle: true,
+      // },
     });
   }
 
@@ -290,13 +294,18 @@ export async function scheduleWeeklyLectures(lectures) {
       type: TriggerType.TIMESTAMP,
       timestamp: firstTimestamp,
       repeatFrequency: RepeatFrequency.WEEKLY,
+      // allowWhileIdle: true,
+      // allowWhileInDoze: true,
+      // allowWhileInForeground: true,
+      // allowWhileInForeground: true,
+      // alarmManager: true,
     };
 
     const lectureName = lec.name || lec.title || "";
 
     await notifee.createTriggerNotification(
       {
-        title: `RollCall: Are you attending ${lectureName}`,
+        title: `Are you attending ${lectureName}`,
         body: "",
         android: {
           channelId: "rollcall",
@@ -446,7 +455,20 @@ export async function scheduleOrAlertBunkStatus() {
       const trigger = {
         type: TriggerType.TIMESTAMP,
         timestamp: triggerDate.getTime(),
+        // AndroidImportance: AndroidImportance.MAX,
+        // AndroidNotificationPriority: AndroidNotificationPriority.HIGH,
       };
+
+
+      //*******************************************imppppppppppppp use thissssss it has alarmmanager */
+      // const triggerAlarmManager = {
+      //   type: TriggerType.TIMESTAMP,
+      //   timestamp: triggerDate.getTime(),
+      //   alarmManager: {
+      //     // Use this instead of allowWhileIdle
+      //     type: AlarmType.SET_EXACT_AND_ALLOW_WHILE_IDLE,
+      //   },
+      // };
 
       await notifee.createTriggerNotification(
         {
@@ -459,7 +481,7 @@ export async function scheduleOrAlertBunkStatus() {
           android: {
             channelId: "rollcall",
             pressAction: { id: "default" },
-            importance: AndroidImportance.HIGH,
+            importance: AndroidImportance.HIGH,  //change to max
             color: "#4CAF50",
           },
           ios: {

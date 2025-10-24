@@ -585,7 +585,8 @@ const Home = () => {
       // 1) Try to load from cache
       const cachedName = await AsyncStorage.getItem("userName");
       if (cachedName) {
-        setName(cachedName);
+        const splitname = cachedName.split(" ");
+        setName(splitname[0]);
         return;
       }
 
@@ -615,7 +616,7 @@ const Home = () => {
 
       // 5) Set state and cache it
 
-      setName(cachedName);
+      setName(cachedName.split(" ")[0]);
       await AsyncStorage.setItem("userName", cachedName);
     } catch (error) {
       // console.error("Error in loadName:", error);
@@ -928,11 +929,11 @@ Attendance will update on the Attendance Screen.`
           <Text style={styles.title}>{name}</Text>
         </View>
         <View>
-          {/* <Ionicons name="notifications-outline" size={28} color="#fff" /> */}
-          <Text style={styles.headerText}>{todayy}</Text>
+          <Ionicons name="notifications-outline" size={28} color="#fff" />
+          {/* <Text style={styles.headerText}>{todayy}</Text>
           <Text style={styles.headerTex}>
             {new Date().toLocaleDateString()}
-          </Text>
+          </Text> */}
         </View>
       </View>
       <FlatList
@@ -1185,7 +1186,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     // marginBottom: 15,
-    borderWidth: 2,
+    borderWidth: 1,
     // borderColor: "#4A4A4A",
     borderColor: "#3fa4ff",
   },
@@ -1195,7 +1196,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   title: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: "bold",
     color: "white",
     marginLeft: 0,

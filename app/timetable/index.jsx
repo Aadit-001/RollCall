@@ -18,6 +18,8 @@ import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { Modal } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 
 // import {
 //   getFirestore,
@@ -60,6 +62,7 @@ export default function Timetable() {
   const [newSubject, setNewSubject] = useState({
     name: "",
     professor: "",
+    room: "",
     startTime: "",
     endTime: "",
     totalClasses: 0,
@@ -70,13 +73,48 @@ export default function Timetable() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [showSubjectSetup, setShowSubjectSetup] = useState(false);
+  const [subjectsInput, setSubjectsInput] = useState("");
+  const [isFirstTime, setIsFirstTime] = useState(false);
+  const [subjects, setSubjects] = useState([]);
+  const [showAddSubject, setShowAddSubject] = useState(false);
+  const [subjectToDelete, setSubjectToDelete] = useState(null);
+  const [showSubjectDropdown, setShowSubjectDropdown] = useState(false);
+
+  // Check if it's first time user
+  const checkFirstTime = async () => {
+    try {
+      const hasSeenSubjectSetup = await AsyncStorage.getItem('hasSeenSubjectSetup');
+      if (!hasSeenSubjectSetup) {
+        await AsyncStorage.setItem('hasSeenSubjectSetup', 'true');
+        setIsFirstTime(true);
+        setShowSubjectSetup(true);
+      }
+    } catch (error) {
+      console.error("Error checking first time:", error);
+    }
+  };
+
+  // Load subjects from storage
+  const loadSubjects = async () => {
+    try {
+      const subjectsData = await AsyncStorage.getItem('subjects');
+      if (subjectsData) {
+        const parsedSubjects = JSON.parse(subjectsData);
+        setSubjects(parsedSubjects);
+      }
+    } catch (error) {
+      console.error('Error loading subjects:', error);
+    }
+  };
 
   // On mount: init notifications & load data
   useEffect(() => {
     (async () => {
       await initNotifications();
-      // await initNotificationsPermissions();
       await loadTimetable();
+      await checkFirstTime();
+      await loadSubjects();
     })();
   }, []);
 
@@ -285,6 +323,49 @@ export default function Timetable() {
     }
   };
 
+  const handleSaveNewSubject = async () => {
+    if (!subjectsInput.trim()) {
+      Alert.alert("Error", "Please enter a subject name");
+      return;
+    }
+
+    try {
+      const newSubjectItem = {
+        id: uuid.v4(),
+        name: subjectsInput.trim(),
+        topics: [],
+        color: getRandomGradient(),
+        icon: getSubjectIcon(subjectsInput.trim().toLowerCase())
+      };
+
+      const updatedSubjects = [...subjects, newSubjectItem];
+      await AsyncStorage.setItem('subjects', JSON.stringify(updatedSubjects));
+      
+      setSubjects(updatedSubjects);
+      setSubjectsInput("");
+      setShowAddSubject(false);
+    } catch (error) {
+      console.error("Error saving subject:", error);
+      Alert.alert("Error", "Failed to save subject. Please try again.");
+    }
+  };
+
+  const handleDeleteSubject = async (subjectId) => {
+    try {
+      const updatedSubjects = subjects.filter(subject => subject.id !== subjectId);
+      await AsyncStorage.setItem('subjects', JSON.stringify(updatedSubjects));
+      setSubjects(updatedSubjects);
+      setSubjectToDelete(null);
+    } catch (error) {
+      console.error("Error deleting subject:", error);
+      Alert.alert("Error", "Failed to delete subject. Please try again.");
+    }
+  };
+
+  const confirmDeleteSubject = (subject) => {
+    setSubjectToDelete(subject);
+  };
+
   const handleAddSubject = (dayIdx) => {
     if (
       !newSubject.name.trim() ||
@@ -303,6 +384,7 @@ export default function Timetable() {
     setNewSubject({
       name: "",
       professor: "",
+      room: "",
       startTime: "",
       endTime: "",
       totalClasses: 0,
@@ -310,10 +392,10 @@ export default function Timetable() {
     });
   };
 
-  const handleDeleteSubject = (dayIdx, subjectId) => {
+  const handleDeleteTimetableSubject = (dayIdx, subjectId) => {
     Alert.alert(
       "Delete Subject",
-      "Are you sure you want to remove this subject?",
+      "Are you sure you want to remove this subject from your timetable?",
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -332,7 +414,7 @@ export default function Timetable() {
     );
   };
 
-  const renderSubject = ({ item, dayIdx, dayName }) => {
+  const renderTimetableSubject = ({ item, dayIdx, dayName }) => {
     const dayColors = DAY_THEMES[dayName] || ["#4361ee", "#3a0ca3"];
 
     return (
@@ -353,16 +435,24 @@ export default function Timetable() {
 
           <View style={styles.subjectDetailsColumn}>
             <Text style={styles.subjectName}>{item.name}</Text>
-            {item.professor ? (
-              <View style={styles.professorRow}>
-                <Ionicons name="person" size={14} color="#aaa" />
-                <Text style={styles.profName}>{item.professor}</Text>
-              </View>
-            ) : null}
+            <View style={{ marginTop: 4 }}>
+              {item.professor ? (
+                <View style={styles.professorRow}>
+                  <Ionicons name="person" size={14} color="#aaa" />
+                  <Text style={styles.profName}>{item.professor}</Text>
+                </View>
+              ) : null}
+              {item.room ? (
+                <View style={styles.roomRow}>
+                  <Ionicons name="location" size={14} color="#aaa" />
+                  <Text style={styles.profName}>{item.room}</Text>
+                </View>
+              ) : null}
+            </View>
           </View>
 
           <TouchableOpacity
-            onPress={() => handleDeleteSubject(dayIdx, item.id)}
+            onPress={() => handleDeleteTimetableSubject(dayIdx, item.id)}
             style={styles.deleteIcon}
           >
             <Ionicons name="trash-outline" size={18} color="#ff4d4d" />
@@ -415,19 +505,60 @@ export default function Timetable() {
           style={styles.gradientBackground}
         >
           <View style={styles.headerRow}>
-            <TouchableOpacity
-              onPress={() => router.back()}
-              style={styles.backButton}
+            <View style={styles.headerLeft}>
+              <TouchableOpacity
+                onPress={() => router.back()}
+                style={styles.backButton}
+              >
+                <Ionicons name="arrow-back" size={26} color="#fff" />
+              </TouchableOpacity>
+              <Text style={styles.header}>My Timetable</Text>
+            </View>
+          </View>
+          <View style={styles.buttonRow}>
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.subjectsButton]}
+              onPress={() => setShowSubjectSetup(true)}
             >
-              <Ionicons name="arrow-back" size={26} color="#fff" />
+              <Ionicons name="book-outline" size={20} color="#fff" />
+              <Text style={styles.actionButtonText}>All Subjects</Text>
             </TouchableOpacity>
-            <Text style={styles.header}>My Timetable</Text>
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.shareButton]}
+              onPress={() => {
+                router.push('/ShareTT');
+              }}
+            >
+              <Ionicons name="share-social-outline" size={20} color="#fff" />
+              <Text style={styles.actionButtonText}>Share TT</Text>
+            </TouchableOpacity>
           </View>
 
           <FlatList
             data={timetable}
             keyExtractor={(item) => item.day}
             contentContainerStyle={styles.listContainer}
+            // ListHeaderComponent={
+            //     <View style={styles.buttonRow}>
+            //       <TouchableOpacity 
+            //         style={[styles.actionButton, styles.subjectsButton]}
+            //         onPress={() => setShowSubjectSetup(true)}
+            //       >
+            //         <Ionicons name="book-outline" size={20} color="#fff" />
+            //         <Text style={styles.actionButtonText}>All Subjects</Text>
+            //       </TouchableOpacity>
+            //       <TouchableOpacity 
+            //         style={[styles.actionButton, styles.shareButton]}
+            //         onPress={() => {
+            //           // TODO: Implement share functionality
+            //           Alert.alert('Share Timetable', 'Share functionality will be implemented here');
+            //         }}
+            //       >
+            //         <Ionicons name="share-social-outline" size={20} color="#fff" />
+            //         <Text style={styles.actionButtonText}>Share TT</Text>
+            //       </TouchableOpacity>
+            //   </View>
+            // }
             ListFooterComponent={renderSaveButton}
             renderItem={({ item: day, index: dayIdx }) => {
               const dayColors = DAY_THEMES[day.day] || ["#4361ee", "#3a0ca3"];
@@ -473,7 +604,7 @@ export default function Timetable() {
                       </View>
                     ) : (
                       day.subjects.map((item, idx) =>
-                        renderSubject({
+                        renderTimetableSubject({
                           item,
                           index: idx,
                           dayIdx,
@@ -484,17 +615,73 @@ export default function Timetable() {
 
                     {editDay === dayIdx && (
                       <View style={styles.addForm}>
-                        <Text style={styles.addFormTitle}>Add New Subject</Text>
+                        <Text style={styles.addFormTitle}>Add New Slot</Text>
 
-                        <TextInput
-                          style={styles.input}
-                          placeholder="Subject Name *"
-                          placeholderTextColor="#888"
-                          value={newSubject.name}
-                          onChangeText={(text) =>
-                            setNewSubject((s) => ({ ...s, name: text }))
-                          }
-                        />
+                        <View style={{ marginBottom: 12 }}>
+                          <TouchableOpacity
+                            style={[styles.input, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}
+                            onPress={() => setShowSubjectDropdown(!showSubjectDropdown)}
+                          >
+                            <Text style={{ color: newSubject.name ? '#fff' : '#888' }}>
+                              {newSubject.name || 'Select Subject *'}
+                            </Text>
+                            <Ionicons 
+                              name={showSubjectDropdown ? 'chevron-up' : 'chevron-down'} 
+                              size={20} 
+                              color="#888" 
+                            />
+                          </TouchableOpacity>
+                          
+                          {showSubjectDropdown && (
+                            <View 
+                              style={styles.dropdownContainer}
+                              onStartShouldSetResponder={() => true}
+                              onTouchEnd={(e) => e.stopPropagation()}
+                            >
+                              <View style={styles.dropdown}>
+                                <FlatList
+                                  data={subjects}
+                                  keyExtractor={(item) => item.id}
+                                  renderItem={({ item }) => (
+                                    <TouchableOpacity
+                                      style={styles.dropdownItem}
+                                      onPress={() => {
+                                        setNewSubject(s => ({ ...s, name: item.name }));
+                                        setShowSubjectDropdown(false);
+                                      }}
+                                      activeOpacity={0.7}
+                                    >
+                                      <Text style={styles.dropdownItemText} numberOfLines={1} ellipsizeMode="tail">{item.name}</Text>
+                                    </TouchableOpacity>
+                                  )}
+                                  ItemSeparatorComponent={() => (
+                                    <View style={styles.dropdownSeparator} />
+                                  )}
+                                  ListEmptyComponent={
+                                    <Text style={styles.dropdownEmptyText}>No subjects added yet</Text>
+                                  }
+                                  keyboardShouldPersistTaps="always"
+                                  showsVerticalScrollIndicator={true}
+                                  style={{ maxHeight: 192 }}
+                                  contentContainerStyle={{ flexGrow: 1 }}
+                                  nestedScrollEnabled={true}
+                                />
+                                <TouchableOpacity
+                                  style={[styles.dropdownItem, { borderTopWidth: 1, borderTopColor: '#333' }]}
+                                  onPress={() => {
+                                    setShowSubjectDropdown(false);
+                                    setShowSubjectSetup(true);
+                                  }}
+                                >
+                                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    <Ionicons name="add-circle-outline" size={18} color="#3fa4ff" style={{ marginRight: 8 }} />
+                                    <Text style={[styles.dropdownItemText, { color: '#3fa4ff' }]}>Add New Subject</Text>
+                                  </View>
+                                </TouchableOpacity>
+                              </View>
+                            </View>
+                          )}
+                        </View>
 
                         <TextInput
                           style={styles.input}
@@ -503,6 +690,16 @@ export default function Timetable() {
                           value={newSubject.professor}
                           onChangeText={(text) =>
                             setNewSubject((s) => ({ ...s, professor: text }))
+                          }
+                        />
+
+                        <TextInput
+                          style={styles.input}
+                          placeholder="Room Number (optional)"
+                          placeholderTextColor="#888"
+                          value={newSubject.room}
+                          onChangeText={(text) =>
+                            setNewSubject((s) => ({ ...s, room: text }))
                           }
                         />
 
@@ -595,12 +792,517 @@ export default function Timetable() {
           />
 
         </LinearGradient>
+
+        {/* Subject Management Modal */}
+        <Modal
+          visible={showSubjectSetup}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => !isFirstTime && setShowSubjectSetup(false)}
+        >
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>
+                  {isFirstTime ? 'Welcome to RollCall!' : 'Manage Subjects'}
+                </Text>
+                {!isFirstTime && (
+                  <TouchableOpacity 
+                    style={styles.closeButton}
+                    onPress={() => setShowSubjectSetup(false)}
+                  >
+                    <Ionicons name="close" size={24} color="#fff" />
+                  </TouchableOpacity>
+                )}
+              </View>
+              
+              <View style={styles.modalBody}>
+                {isFirstTime && (
+                  <Text style={styles.modalText}>
+                    Let's get started by adding your subjects.
+                  </Text>
+                )}
+
+                <FlatList
+                  data={subjects}
+                  keyExtractor={(item) => item.id}
+                  contentContainerStyle={styles.subjectsList}
+                  ListHeaderComponent={
+                    <View style={styles.subjectsHeader}>
+                      <Text style={styles.subjectsTitle}>Your Subjects</Text>
+                      <TouchableOpacity 
+                        style={styles.addSubjectButton}
+                        onPress={() => setShowAddSubject(true)}
+                      >
+                        <Ionicons name="add" size={20} color="#3fa4ff" />
+                        <Text style={styles.addSubjectText}>Add Subject</Text>
+                      </TouchableOpacity>
+                    </View>
+                  }
+                  ListEmptyComponent={
+                    <View style={styles.emptySubjects}>
+                      <Ionicons name="book-outline" size={40} color="#555" />
+                      <Text style={styles.emptySubjectsText}>No subjects added yet</Text>
+                    </View>
+                  }
+                  renderItem={({ item }) => (
+                    <View style={styles.subjectItem}>
+                      <View style={styles.subjectInfo}>
+                        <View 
+                          style={[
+                            styles.subjectColor, 
+                            { backgroundColor: item.color ? item.color[0] : '#3fa4ff' }
+                          ]} 
+                        />
+                        <Text style={styles.subjectNameText} numberOfLines={1}>
+                          {item.name}
+                        </Text>
+                      </View>
+                      <TouchableOpacity 
+                        style={styles.deleteSubjectButton}
+                        onPress={() => confirmDeleteSubject(item)}
+                      >
+                        <Ionicons name="trash-outline" size={20} color="#ff4d4d" />
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                />
+
+                {showAddSubject && (
+                  <View style={styles.addSubjectContainer}>
+                    <Text style={styles.addSubjectTitle}>Add New Subject</Text>
+                    <TextInput
+                      style={styles.subjectInput}
+                      placeholder="Enter subject name"
+                      placeholderTextColor="#888"
+                      value={subjectsInput}
+                      onChangeText={setSubjectsInput}
+                      autoFocus
+                    />
+                    <View style={styles.addSubjectActions}>
+                      <TouchableOpacity 
+                        style={[styles.modalButton, styles.cancelButton]}
+                        onPress={() => {
+                          setShowAddSubject(false);
+                          setSubjectsInput('');
+                        }}
+                      >
+                        <Text style={[styles.buttonText, {color: '#fff'}]}>Cancel</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        style={[styles.modalSaveButton, styles.saveButton]}
+                        onPress={handleSaveNewSubject}
+                      >
+                        <Text style={[styles.buttonText, {color: '#fff'}]}>Add</Text>
+                      </TouchableOpacity>
+                      {/* <TouchableOpacity 
+                        style={styles.doneButton}
+                        onPress={handleSaveNewSubject}
+                      >
+                        <Text style={styles.buttonText}>Add Subject</Text>
+                      </TouchableOpacity> */}
+                    </View>
+                  </View>
+                )}
+
+                {!showAddSubject && (
+                  <View style={styles.modalButtonContainer}>
+                    <TouchableOpacity 
+                      style={styles.doneButton}
+                      onPress={() => setShowSubjectSetup(false)}
+                    >
+                       <LinearGradient
+                                                  colors={["#3fa4ff", "#2389da"]}
+                                                  start={{ x: 0, y: 0 }}
+                                                  end={{ x: 1, y: 0 }}
+                                                  style={styles.doneBtnGradient}
+                                                >
+                                                <Text style={styles.buttonText}>Done</Text>
+                      
+                                                </LinearGradient>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Delete Confirmation Modal */}
+        <Modal
+          visible={!!subjectToDelete}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setSubjectToDelete(null)}
+        >
+          <View style={styles.confirmModalContainer}>
+            <View style={styles.confirmModalContent}>
+              <Text style={styles.confirmModalTitle}>Delete Subject</Text>
+              <Text style={styles.confirmModalText}>
+                Are you sure you want to delete "{subjectToDelete?.name}"?
+                This will remove it from your subjects list.
+              </Text>
+              <View style={styles.confirmModalButtons}>
+                <TouchableOpacity 
+                  style={[styles.modalButton, styles.cancelButton, {flex: 1}]}
+                  onPress={() => setSubjectToDelete(null)}
+                >
+                  <Text style={[styles.buttonText, {color: '#fff'}]}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.modalButton, styles.deleteButton, {flex: 1}]}
+                  onPress={() => handleDeleteSubject(subjectToDelete.id)}
+                >
+                  <Text style={styles.buttonText}>Delete</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </SafeAreaView>
     </SafeAreaProvider>
   );
 }
 
 const styles = StyleSheet.create({
+  // Dropdown Styles
+  dropdownContainer: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+    marginTop: 4,
+    maxHeight: 240, // Set max height for the entire dropdown
+  },
+  dropdown: {
+    backgroundColor: '#1e1e1e',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#333',
+    maxHeight: 240, // Match container height
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+  },
+  dropdownItem: {
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    minHeight: 48, // Ensure consistent height for touch targets
+    justifyContent: 'center',
+  },
+  dropdownItemText: {
+    color: '#fff',
+    fontSize: 16,
+    lineHeight: 24, // Better text vertical alignment
+  },
+  dropdownSeparator: {
+    height: 1,
+    backgroundColor: '#333',
+    marginHorizontal: 8,
+  },
+  dropdownEmptyText: {
+    color: '#888',
+    textAlign: 'center',
+    padding: 16,
+    fontStyle: 'italic',
+    minHeight: 48, // Match item height for consistency
+  },
+
+  // Subject List Styles
+  subjectsList: {
+    flexGrow: 1,
+    width: '100%',
+  },
+  subjectsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  subjectsTitle: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  addSubjectButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(63, 164, 255, 0.3)',
+    backgroundColor: 'rgba(63, 164, 255, 0.1)',
+  },
+  addSubjectText: {
+    color: '#3fa4ff',
+    marginLeft: 6,
+    fontWeight: '500',
+    fontSize: 14,
+  },
+  emptySubjects: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 30,
+  },
+  emptySubjectsText: {
+    color: '#888',
+    marginTop: 10,
+    fontSize: 16,
+    textAlign: 'center',
+  },
+  subjectItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#232323',
+    borderRadius: 10,
+    marginBottom: 8,
+  },
+  subjectInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 12,
+  },
+  subjectColor: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginRight: 12,
+  },
+  subjectNameText: {
+    color: '#fff',
+    fontSize: 16,
+    flex: 1,
+  },
+  deleteSubjectButton: {
+    padding: 6,
+    borderRadius: 15,
+    backgroundColor: 'rgba(255, 77, 77, 0.1)',
+  },
+  addSubjectContainer: {
+    marginTop: 20,
+    backgroundColor: '#1e1e1e',
+    borderRadius: 10,
+    padding: 16,
+  },
+  addSubjectTitle: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  subjectInput: {
+    backgroundColor: '#232323',
+    color: '#fff',
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#333',
+    marginBottom: 16,
+    fontSize: 16,
+  },
+  addSubjectActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    // marginLeft: -20,
+    // gap: 2,
+  },
+  // Modal Styles
+  modalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  // Confirmation Modal
+  confirmModalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  confirmModalContent: {
+    backgroundColor: '#1e1e1e',
+    borderRadius: 12,
+    padding: 20,
+    width: '100%',
+    maxWidth: 400,
+  },
+  confirmModalTitle: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 12,
+  },
+  confirmModalText: {
+    color: '#e0e0e0',
+    fontSize: 16,
+    lineHeight: 22,
+    marginBottom: 24,
+  },
+  confirmModalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 12,
+  },
+  deleteButton: {
+    backgroundColor: '#ff4d4d',
+  },
+  modalContent: {
+    backgroundColor: '#1E1E1E',
+    width: '100%',
+    borderRadius: 15,
+    overflow: 'hidden',
+    // borderWidth: 1,
+    borderColor: '#333',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 10,
+      },
+    }),
+  },
+  modalHeader: {
+    backgroundColor: '#121212',
+    padding: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#333',
+  },
+  modalTitle: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
+  },
+  closeButton: {
+    padding: 5,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 20,
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalBody: {
+    padding: 20,
+    backgroundColor: '#1A1A1A',
+  },
+  modalText: {
+    color: '#E0E0E0',
+    fontSize: 16,
+    marginBottom: 20,
+    lineHeight: 22,
+  },
+  subjectsInput: {
+    backgroundColor: '#232323',
+    color: '#fff',
+    borderRadius: 10,
+    padding: 15,
+    minHeight: 120,
+    textAlignVertical: 'top',
+    marginBottom: 20,
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: '#333',
+  },
+  modalButtonContainer: {
+    borderRadius: 16,
+    overflow: "hidden",
+    height: 56,
+    marginTop: 20,
+  },
+  modalButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 25,
+    borderRadius: 8,
+    // marginLeft: 10,
+    minWidth: 120,
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 3,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+  modalSaveButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 25,
+    // backgroundColor: '#3fa4ff',
+    borderRadius: 8,
+    // marginLeft: 10,
+    minWidth: 120,
+    alignItems: 'center',
+    // ...Platform.select({
+    //   ios: {
+    //     shadowColor: '#000',
+    //     shadowOffset: { width: 0, height: 2 },
+    //     shadowOpacity: 0.2,
+    //     shadowRadius: 3,
+    //   },
+    //   android: {
+    //     elevation: 3,
+    //   },
+    // }),
+  },
+  cancelButton: {
+    backgroundColor: '#333',
+  },
+  saveButton: {
+    backgroundColor: '#3fa4ff',
+  },
+  buttonText: {
+    
+    color: "#FFF",
+    fontSize: 18,
+    fontWeight: "600",
+  },
+  doneBtnGradient: {
+    alignItems: "center",
+    justifyContent: "center",
+    height: "100%",
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  subjectsButton: {
+    backgroundColor: 'rgba(63, 164, 255, 0.15)',
+    borderColor: 'rgba(63, 164, 255, 0.3)',
+  },
+  shareButton: {
+    backgroundColor: 'rgba(108, 99, 255, 0.15)',
+    borderColor: 'rgba(108, 99, 255, 0.3)',
+  },
   loadingContainer: {
     flex: 1,
     backgroundColor: '#121212',
@@ -624,10 +1326,44 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 16,
-    marginBottom: 2,
-    // marginTop: 40,
-    paddingVertical: 12,
+    paddingTop: 12,
+    paddingBottom: 8,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    gap: 10,
+    marginBottom: 8,
+    marginTop: 4,
+    position: 'fixed'
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 25,
+    borderWidth: 1,
+    flex: 1,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 3,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  actionButtonText: {
+    color: '#fff',
+    marginLeft: 6,
+    fontWeight: '500',
   },
   backButton: {
     marginRight: 15,
@@ -647,6 +1383,25 @@ const styles = StyleSheet.create({
   listContainer: {
     // paddingBottom: 80,
     paddingHorizontal: 12,
+  },
+  addBtn: {
+    marginTop: 15,
+    borderRadius: 12,
+    overflow: "hidden",
+    height: 52,
+  },
+  addBtnGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+  },
+  addBtnText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
   },
   daySection: {
     marginBottom: 24,
@@ -755,13 +1510,17 @@ const styles = StyleSheet.create({
   },
   subjectDetailsColumn: {
     flex: 1,
-    marginLeft: 12,
+    paddingLeft: 12,
+  },
+  roomRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
   },
   subjectName: {
     color: "#fff",
     fontSize: 18,
     fontWeight: "bold",
-    marginBottom: 4,
   },
   professorRow: {
     flexDirection: "row",
@@ -868,10 +1627,10 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  saveButton: {
-    borderRadius: 12,
-    overflow: "hidden",
-  },
+  // saveButton: {
+    // borderRadius: 12,
+    // overflow: "hidden",
+  // },
   saveBtnGradient: {
     flexDirection: "row",
     alignItems: "center",

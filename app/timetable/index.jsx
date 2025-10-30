@@ -431,6 +431,49 @@ export default function Timetable() {
     });
   };
 
+  // const handleSaveNewSubject = async () => {
+  //   if (!subjectsInput.trim()) {
+  //     Alert.alert("Error", "Please enter a subject name");
+  //     return;
+  //   }
+
+  //   try {
+  //     const newSubjectItem = {
+  //       id: uuid.v4(),
+  //       name: subjectsInput.trim(),
+  //       topics: [],
+  //       color: getRandomGradient(),
+  //       icon: getSubjectIcon(subjectsInput.trim().toLowerCase())
+  //     };
+
+  //     const updatedSubjects = [...subjects, newSubjectItem];
+  //     await AsyncStorage.setItem('subjects', JSON.stringify(updatedSubjects));
+      
+  //     setSubjects(updatedSubjects);
+  //     setSubjectsInput("");
+  //     setShowAddSubject(false);
+  //   } catch (error) {
+  //     console.error("Error saving subject:", error);
+  //     Alert.alert("Error", "Failed to save subject. Please try again.");
+  //   }
+  // };
+
+  // const handleDeleteSubject = async (subjectId) => {
+  //   try {
+  //     const updatedSubjects = subjects.filter(subject => subject.id !== subjectId);
+  //     await AsyncStorage.setItem('subjects', JSON.stringify(updatedSubjects));
+  //     setSubjects(updatedSubjects);
+  //     setSubjectToDelete(null);
+  //   } catch (error) {
+  //     console.error("Error deleting subject:", error);
+  //     Alert.alert("Error", "Failed to delete subject. Please try again.");
+  //   }
+  // };
+
+  // const confirmDeleteSubject = (subject) => {
+  //   setSubjectToDelete(subject);
+  // };
+
   const handleSaveNewSubject = async () => {
     if (!subjectsInput.trim()) {
       Alert.alert("Error", "Please enter a subject name");
@@ -1179,7 +1222,6 @@ export default function Timetable() {
                 <Text style={styles.modalTitle}>
                   {isFirstTime ? 'Welcome to RollCall!' : 'Manage Subjects'}
                 </Text>
-
                 {!isFirstTime && (
                   <TouchableOpacity 
                     style={styles.closeButton}
@@ -1795,6 +1837,25 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 20,
     borderRadius: 8, // Ensure gradient also has border radius if needed
+  },
+  addBtnText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  addBtn: {
+    marginTop: 15,
+    borderRadius: 12,
+    overflow: "hidden",
+    height: 52,
+  },
+  addBtnGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
   },
   addBtnText: {
     color: '#fff',

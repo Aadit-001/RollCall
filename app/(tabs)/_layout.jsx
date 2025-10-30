@@ -97,7 +97,7 @@ export default function TabLayout() {
           borderWidth: 0.1,
           borderColor: "#40E0D0",
           position: "absolute",
-          bottom: 10,
+          bottom: 20,
           marginLeft: "5%",
           // right: "5%",
           // marginHorizontal: 20,

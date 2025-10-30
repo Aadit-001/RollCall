@@ -585,7 +585,8 @@ const Home = () => {
       // 1) Try to load from cache
       const cachedName = await AsyncStorage.getItem("userName");
       if (cachedName) {
-        setName(cachedName);
+        const splitname = cachedName.split(" ");
+        setName(splitname[0]);
         return;
       }
 
@@ -615,7 +616,7 @@ const Home = () => {
 
       // 5) Set state and cache it
 
-      setName(cachedName);
+      setName(cachedName.split(" ")[0]);
       await AsyncStorage.setItem("userName", cachedName);
     } catch (error) {
       // console.error("Error in loadName:", error);
@@ -908,8 +909,7 @@ Attendance will update on the Attendance Screen.`
   // };
 
   return (
-    <SafeAreaProvider>
-    <SafeAreaView style={styles.container}>
+    <SafeAreaProvider style={styles.container}>
       <StatusBar style="light" backgroundColor="#121212" />
       {showAttendanceFinder && (
         <AttendancePercentageFinder onClose={handleAttendanceFinderClose} />
@@ -925,17 +925,18 @@ Attendance will update on the Attendance Screen.`
               <Text style={styles.profileIconText}>{getInitials(name)}</Text>
             </View>
           </TouchableOpacity>
-          <Text style={styles.title}>{name}</Text>
+          <Text style={styles.title}>Hey, {name} 👋</Text>
         </View>
         <View>
-          {/* <Ionicons name="notifications-outline" size={28} color="#fff" /> */}
-          <Text style={styles.headerText}>{todayy}</Text>
+          {/* <Ionicons name="notifications-outline" onPress={() => router.push("/AdminNotificationSection")} size={28} color="#fff" /> */}
+          {/* <Text style={styles.headerText}>{todayy}</Text>
           <Text style={styles.headerTex}>
             {new Date().toLocaleDateString()}
-          </Text>
+          </Text> */}
         </View>
       </View>
       <FlatList
+        showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <>
             {/* Welcome Box */}
@@ -945,8 +946,8 @@ Attendance will update on the Attendance Screen.`
               <Text style={styles.topBoxTextName}>R O L L C A L L</Text>
             </View>
 
-            {/* Creative Timetable Button - MOVED UP */}
-            <View style={styles.timetableButtonContainer}>
+            {/* All Timetable Buttons in One Row */}
+            <View style={styles.allButtonsContainer}>
               <TouchableOpacity
                 style={styles.timetableButton}
                 onPress={() => router.push("/timetable")}
@@ -959,24 +960,67 @@ Attendance will update on the Attendance Screen.`
                   style={styles.buttonGradient}
                 >
                   <View style={styles.buttonIconContainer}>
-                    <Ionicons name="calendar" size={28} color="#fff" />
+                    <Ionicons name="calendar" size={24} color="#fff" />
                   </View>
                   <View style={styles.buttonTextContainer}>
-                    <Text style={styles.buttonTitle}>Manage Timetable</Text>
-                    <Text style={styles.buttonSubtitle}>
-                      Add or edit your schedule
-                    </Text>
+                    <Text style={styles.buttonTitle}>Manage TT</Text>
                   </View>
-                  <View style={styles.buttonArrow}>
-                    <Ionicons name="chevron-forward" size={24} color="#fff" />
+                </LinearGradient>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.sendButton}
+                onPress={() => router.push("/SendTimetable")}
+                activeOpacity={0.8}
+              >
+                <LinearGradient
+                  colors={["#4CAF50", "#45a049"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.buttonGradient}
+                >
+                  <View style={styles.buttonIconContainer}>
+                    <Ionicons name="send-outline" size={24} color="#fff" />
+                  </View>
+                  <View style={styles.buttonTextContainer}>
+                    <Text style={styles.buttonTitle}>Send TT</Text>
+                  </View>
+                </LinearGradient>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.receiveButton}
+                onPress={() => router.push("/ReceiveTimetable")}
+                activeOpacity={0.8}
+              >
+                <LinearGradient
+                  colors={["#FF9800", "#f57c00"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.buttonGradient}
+                >
+                  <View style={styles.buttonIconContainer}>
+                    <Ionicons name="download-outline" size={24} color="#fff" />
+                  </View>
+                  <View style={styles.buttonTextContainer}>
+                    <Text style={styles.buttonTitle}>Receive TT</Text>
                   </View>
                 </LinearGradient>
               </TouchableOpacity>
             </View>
 
-            {/* Today's Lectures Title - MOVED DOWN */}
-            <View style={styles.bottomBoxTittle}>
-              <Text style={styles.bottomBoxTittleText}>Today's Lectures</Text>
+            {/* Today's Lectures Title - Professional Design */}
+            <View style={styles.lecturesSectionHeader}>
+              <View style={styles.lecturesSectionHeaderContent}>
+                {/* <View style={styles.lecturesSectionIconContainer}>
+                  <Ionicons name="calendar-outline" size={20} color="#3fa4ff" />
+                </View> */}
+                <View style={styles.lecturesSectionTextContainer}>
+                  <Text style={styles.lecturesSectionTitle}>Today's Lectures</Text>
+                  <Text style={styles.lecturesSectionDate}>{todayy}, {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</Text>
+                </View>
+                <View style={styles.lecturesSectionAccent} />
+              </View>
             </View>
           </>
         }
@@ -1061,12 +1105,12 @@ Attendance will update on the Attendance Screen.`
             <View style={styles.ttPlaceholderBox}>
               <Ionicons
                 name="calendar-outline"
-                size={80}
+                size={40}
                 color="#555"
-                style={styles.ttPlaceholderIcon}
+                
               />
               <Text style={styles.ttPlaceholderText}>
-                Please add your Timetable first.
+                No lecture scheduled today.
               </Text>
               {/* <TouchableOpacity style={styles.addTimetableButton} onPress={() => router.push("/Timetable")}>
                 <Text style={styles.addTimetableButtonText}>Add Timetable</Text>
@@ -1092,7 +1136,6 @@ Attendance will update on the Attendance Screen.`
         lectures={lectures}
         onClose={() => setShowBunkModal(false)}
       />
-    </SafeAreaView>
     </SafeAreaProvider>
   );
 };
@@ -1185,7 +1228,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     // marginBottom: 15,
-    borderWidth: 2,
+    borderWidth: 1,
     // borderColor: "#4A4A4A",
     borderColor: "#3fa4ff",
   },
@@ -1195,7 +1238,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   title: {
-    fontSize: 32,
+    fontSize: 24,
     fontWeight: "bold",
     color: "white",
     marginLeft: 0,
@@ -1229,7 +1272,7 @@ const styles = StyleSheet.create({
     width: "99%", // Adjusted width to align with other content
     alignSelf: "center", // Center the box
     padding: 50,
-    marginTop: 20, // Added margin top
+    marginTop: 16, // Added margin top
     marginBottom: 20, // Added margin bottom
     display: "flex",
     flexDirection: "column",
@@ -1253,40 +1296,73 @@ const styles = StyleSheet.create({
     textAlign: "center",
     // Responsive font size based on screen width
   },
-  bottomBoxTittle: {
-    // backgroundColor: "transparent", // Already transparent
-    width: "99%", // Align with other content
+  lecturesSectionHeader: {
+    width: "99%",
     alignSelf: "center",
-    // height: 40, // Height can be dynamic
-    justifyContent: "flex-start", // Align text to the left
-    alignItems: "flex-start",
-    marginTop: 10, // Reduced margin
-    marginBottom: 15, // Increased margin for spacing before cards
+    marginTop: -12,
+    marginBottom: 2,
   },
-  bottomBoxTittleText: {
-    color: "#E0E0E0", // Lighter grey for less emphasis than main titles
-    fontSize: 22, // Increased size
-    fontWeight: "600", // Semi-bold
+  lecturesSectionHeaderContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    // backgroundColor: "rgba(63, 164, 255, 0.08)",
+    borderRadius: 12,
+    paddingVertical: 14,
+    // paddingHorizontal: 16,
+    // borderWidth: 1,
+    // borderColor: "rgba(63, 164, 255, 0.15)",
+  },
+  lecturesSectionIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(63, 164, 255, 0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  lecturesSectionTextContainer: {
+    flex: 1,
+  },
+  lecturesSectionTitle: {
+    color: "#FFFFFF",
+    fontSize: 18,
+    fontWeight: "700",
+    letterSpacing: 0.5,
+  },
+  lecturesSectionDate: {
+    color: "rgba(255, 255, 255, 0.6)",
+    fontSize: 12,
+    fontWeight: "400",
+    marginTop: 1,
+  },
+  lecturesSectionAccent: {
+    width: 4,
+    height: 20,
+    backgroundColor: "#3fa4ff",
+    borderRadius: 2,
   },
   ttPlaceholderBox: {
-    backgroundColor: "#2C2C2E", // Darker placeholder background
+    backgroundColor: "transparent", // Darker placeholder background
     borderRadius: 10,
     marginVertical: 20, // Vertical margin
     padding: 25, // Increased padding
     width: "99%",
     alignSelf: "center",
     alignItems: "center", // Center content inside
+    marginTop: 40,
   },
   ttPlaceholderText: {
     color: "#A0A0A0", // Lighter placeholder text
     fontSize: 16,
     textAlign: "center",
     lineHeight: 22, // Improved readability
+    marginTop: 10,
   },
   lectureCard: {
     backgroundColor: "#2C2C2E", // A slightly lighter dark shade for the card
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 10,
+    padding: 12,
     marginVertical: 8,
     marginHorizontal: 2, // Or adjust as needed for your screen layout
     flexDirection: "row",
@@ -1344,55 +1420,71 @@ const styles = StyleSheet.create({
     backgroundColor: "#34C759", // A standard green for present
   },
   timetableButtonContainer: {
-    marginTop: 10, // Reduced margin
+    marginTop: 6, // Reduced margin
     marginHorizontal: "4%", // Use percentage for consistent alignment (92% width)
     marginBottom: 25, // Increased margin
   },
   timetableButton: {
-    borderRadius: 16,
-    elevation: 4,
+    flex: 1,
+    borderRadius: 12,
+    elevation: 3,
     shadowColor: "#3fa4ff",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3, // Slightly more prominent shadow
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+  },
+  allButtonsContainer: {
+    marginTop: 6,
+    marginHorizontal: "4%",
+    marginBottom: 25,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 8,
+    height: 80,
+  },
+  sendButton: {
+    flex: 1,
+    borderRadius: 12,
+    elevation: 3,
+    shadowColor: "#4CAF50",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+  },
+  receiveButton: {
+    flex: 1,
+    borderRadius: 12,
+    elevation: 3,
+    shadowColor: "#FF9800",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
   },
   buttonGradient: {
-    flexDirection: "row",
+    flexDirection: "column",
     alignItems: "center",
-    borderRadius: 16,
-    paddingVertical: 18, // Increased padding
-    paddingHorizontal: 20,
+    justifyContent: "center",
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
   },
   buttonIconContainer: {
     backgroundColor: "rgba(255,255,255,0.2)",
-    borderRadius: 12,
-    width: 48, // Adjusted size
-    height: 48, // Adjusted size
+    borderRadius: 10,
+    width: 36,
+    height: 36,
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 5, // Space between icon and text
+    marginBottom: 6,
   },
   buttonTextContainer: {
-    flex: 1,
-    marginLeft: 12, // Adjusted margin
+    alignItems: "center",
   },
   buttonTitle: {
     color: "#fff",
-    fontSize: 17, // Slightly adjusted size
+    fontSize: 12,
     fontWeight: "bold",
-  },
-  buttonSubtitle: {
-    color: "rgba(255,255,255,0.85)", // Slightly more opaque
-    fontSize: 13, // Slightly adjusted size
-    marginTop: 3, // Adjusted spacing
-  },
-  buttonArrow: {
-    backgroundColor: "rgba(255,255,255,0.15)",
-    borderRadius: 16, // Match button border radius
-    width: 36, // Adjusted size
-    height: 36, // Adjusted size
-    alignItems: "center",
-    justifyContent: "center",
+    textAlign: "center",
   },
   scrollContent: {
     paddingBottom: 32,

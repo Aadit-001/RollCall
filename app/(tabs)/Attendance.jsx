@@ -362,7 +362,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   title: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: "bold",
     color: "white",
   },

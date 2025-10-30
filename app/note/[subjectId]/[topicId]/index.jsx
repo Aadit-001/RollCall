@@ -3,10 +3,13 @@ import {
   View,
   Text,
   StyleSheet,
+  SafeAreaView,
   TouchableOpacity,
   TextInput,
   Animated,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -130,7 +133,7 @@ export default function TopicNotes() {
   };
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
       <StatusBar style="light" backgroundColor="#121212" />
 
       {/* Header */}
@@ -150,7 +153,7 @@ export default function TopicNotes() {
           {/* Clear button */}
 
           {/* Save indicator */}
-          <View style={styles.saveIndicator}>
+          {/* <View style={styles.saveIndicator}>
             {isSaving ? (
               <ActivityIndicator size="small" color="#3fa4ff" />
             ) : (
@@ -161,7 +164,7 @@ export default function TopicNotes() {
                 </View>
               </Animated.View>
             )}
-          </View>
+          </View> */}
             {note.length > 0 && (
               <TouchableOpacity onPress={clearNote} style={styles.clearButton}>
                 <Ionicons name="trash-outline" size={20} color="#ff6b6b" />
@@ -195,7 +198,7 @@ export default function TopicNotes() {
             : "Start typing to see word count"}
         </Text>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

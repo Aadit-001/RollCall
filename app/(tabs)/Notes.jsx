@@ -467,7 +467,7 @@ const styles = StyleSheet.create({
   },
   headerText: {
     color: "#fff",
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: "bold",
   },
   subHeaderText: {

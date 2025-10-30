@@ -9,6 +9,7 @@ import {
   TextInput,
   Alert,
   Platform,
+  KeyboardAvoidingView,
   Animated,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -365,6 +366,7 @@ export default function SubjectTopics() {
 
         {/* Add Topic Modal */}
         <Modal visible={modalVisible} animationType="slide" transparent>
+          {/* <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}> */}
           <View style={styles.modalBg}>
             <Animated.View
               style={[
@@ -381,6 +383,7 @@ export default function SubjectTopics() {
                 },
               ]}
             >
+              <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>Add New Topic</Text>
                 <TouchableOpacity onPress={() => setModalVisible(false)}>
@@ -422,8 +425,10 @@ export default function SubjectTopics() {
                   <Text style={styles.addBtnText}>Create Topic</Text>
                 </LinearGradient>
               </TouchableOpacity>
+            </KeyboardAvoidingView>
             </Animated.View>
           </View>
+          {/* </KeyboardAvoidingView> */}
         </Modal>
       </LinearGradient>
     </View>

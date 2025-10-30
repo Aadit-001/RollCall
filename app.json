@@ -2,18 +2,30 @@
   "expo": {
     "name": "RollCall",
     "slug": "rollcall",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
-    "icon": "./assets/images/rc3.jpeg",
+    "icon": "./assets/images/icon.png",
     "scheme": "rollcall",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "android": {
       "package": "com.pixelvolt.RollCall",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/rc3.jpeg",
+        "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "permissions": [
+        "android.permission.INTERNET",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_WIFI_STATE",
+        "android.permission.CHANGE_WIFI_STATE",
+        "android.permission.NEARBY_WIFI_DEVICES",
+        "android.permission.BLUETOOTH",
+        "android.permission.BLUETOOTH_ADMIN",
+        "android.permission.BLUETOOTH_CONNECT",
+        "android.permission.CAMERA"
+      ]
     },
     "ios": {
       "supportsTablet": true,
@@ -22,14 +34,14 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/rc3.jpeg"
+      "favicon": "./assets/images/icon.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/rc3.jpeg",
+          "image": "./assets/images/icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
@@ -41,9 +53,22 @@
           "androidAppExtension": true,
           "iosDeploymentTarget": "13.4",
           "apsEnvMode": "production",
-          "backgroundModes": ["remote-notification"]
+          "backgroundModes": [
+            "remote-notification"
+          ]
         }
-      ]
+      ],
+      [
+        "react-native-ble-manager",
+        {
+          "modes": [
+            "peripheral",
+            "central"
+          ],
+          "bluetoothAlwaysPermission": "Allow $(PRODUCT_NAME) to connect to bluetooth devices",
+          "bluetoothPeripheralPermission": "Allow $(PRODUCT_NAME) to use bluetooth"
+        }
+      ],
     ],
     "experiments": {
       "typedRoutes": true
@@ -53,7 +78,6 @@
         "origin": false
       },
       "eas": {
-        "projectId": "e67f1e9f-1740-4018-8cc5-57a63912c8cf",
         "build": {
           "experimental": {
             "ios": {
@@ -62,7 +86,27 @@
                   "targetName": "NotifeeNotificationServiceExtension",
                   "bundleIdentifier": "com.pixelvolt.RollCall.NotifeeNotificationServiceExtension",
                   "entitlements": {
-                    "com.apple.security.application-groups": ["group.com.pixelvolt.RollCall.notifee"]
+                    "com.apple.security.application-groups": [
+                      "group.com.pixelvolt.RollCall.notifee"
+                    ]
+                  }
+                },
+                {
+                  "targetName": "NotifeeNotificationServiceExtension",
+                  "bundleIdentifier": "com.pixelvolt.RollCall.NotifeeNotificationServiceExtension",
+                  "entitlements": {
+                    "com.apple.security.application-groups": [
+                      "group.com.pixelvolt.RollCall.notifee"
+                    ]
+                  }
+                },
+                {
+                  "targetName": "NotifeeNotificationServiceExtension",
+                  "bundleIdentifier": "com.pixelvolt.RollCall.NotifeeNotificationServiceExtension",
+                  "entitlements": {
+                    "com.apple.security.application-groups": [
+                      "group.com.pixelvolt.RollCall.notifee"
+                    ]
                   }
                 }
               ]
@@ -73,13 +117,25 @@
                   "targetName": "NotifeeNotificationServiceExtension",
                   "bundleIdentifier": "com.pixelvolt.RollCall.NotifeeNotificationServiceExtension",
                   "entitlements": {
-                    "com.apple.security.application-groups": ["group.com.pixelvolt.RollCall.notifee"]
+                    "com.apple.security.application-groups": [
+                      "group.com.pixelvolt.RollCall.notifee"
+                    ]
+                  }
+                },
+                {
+                  "targetName": "NotifeeNotificationServiceExtension",
+                  "bundleIdentifier": "com.pixelvolt.RollCall.NotifeeNotificationServiceExtension",
+                  "entitlements": {
+                    "com.apple.security.application-groups": [
+                      "group.com.pixelvolt.RollCall.notifee"
+                    ]
                   }
                 }
               ]
             }
           }
-        }
+        },
+        "projectId": "e67f1e9f-1740-4018-8cc5-57a63912c8cf"
       }
     },
     "owner": "pixelvolt"
